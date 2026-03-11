@@ -1,0 +1,18 @@
+# render.yaml — Render Blueprint Spec
+# Deploy: Connect GitHub repo → Render auto-detects this file
+services:
+  - type: web
+    name: kisanmitra-ai
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python server.py
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: MANDI_API_KEY
+        sync: false
+      - key: PYTHON_VERSION
+        value: "3.10.0"
+    plan: free
