@@ -22,10 +22,13 @@ from dashboard.app import app as flask_app
 def start_bot():
     """Run Telegram bot in a separate thread with its own event loop"""
     import asyncio
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    from main import main
-    main()
+    import traceback
+    try:
+        from main import main
+        asyncio.run(main())
+    except Exception as e:
+        print(f"❌ BOT THREAD CRASHED: {e}")
+        traceback.print_exc()
 
 
 if __name__ == "__main__":

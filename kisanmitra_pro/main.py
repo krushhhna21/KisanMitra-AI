@@ -102,7 +102,7 @@ def print_banner():
 
 
 # === MAIN ===
-def main():
+async def main():
     init_db()
     print_banner()
 
@@ -133,11 +133,10 @@ def main():
         asyncio.create_task(schedule_morning_alerts(application))
     app.post_init = post_init
 
-    keep_alive()   # 🌐 Starts Flask keep-alive server on port 8080
-    print("✅ Bot is LIVE! Press Ctrl+C to stop.")
-    print("📊 Dashboard: python dashboard/app.py → http://localhost:8080\n")
-    app.run_polling(allowed_updates=Update.ALL_TYPES)
+    print("✅ Bot is LIVE! Press Ctrl+C to stop.\n")
+    await app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
 if __name__ == "__main__":
-    main()
+    keep_alive()   # 🌐 Only start keep-alive when running standalone
+    asyncio.run(main())
