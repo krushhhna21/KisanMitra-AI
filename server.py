@@ -25,10 +25,13 @@ def start_bot():
     import traceback
     try:
         from main import main
-        asyncio.run(main())
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        main()
     except Exception as e:
-        print(f"❌ BOT THREAD CRASHED: {e}")
+        print(f"❌ BOT THREAD CRASHED: {e}", flush=True)
         traceback.print_exc()
+        sys.stdout.flush()
 
 
 if __name__ == "__main__":

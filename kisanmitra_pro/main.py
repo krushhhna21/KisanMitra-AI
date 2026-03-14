@@ -102,7 +102,7 @@ def print_banner():
 
 
 # === MAIN ===
-async def main():
+def main():
     init_db()
     print_banner()
 
@@ -133,10 +133,10 @@ async def main():
         asyncio.create_task(schedule_morning_alerts(application))
     app.post_init = post_init
 
-    print("✅ Bot is LIVE! Press Ctrl+C to stop.\n")
-    await app.run_polling(allowed_updates=Update.ALL_TYPES)
+    print("✅ Bot is LIVE! Press Ctrl+C to stop.\n", flush=True)
+    app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
 if __name__ == "__main__":
     keep_alive()   # 🌐 Only start keep-alive when running standalone
-    asyncio.run(main())
+    main()
