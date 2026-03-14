@@ -4,7 +4,6 @@ services:
   - type: web
     name: kisanmitra-ai
     runtime: python
-    pythonVersion: "3.11.9"
     buildCommand: pip install -r requirements.txt
     startCommand: python server.py
     envVars:
@@ -15,3 +14,4 @@ services:
       - key: MANDI_API_KEY
         sync: false
     plan: free
+

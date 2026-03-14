@@ -1,5 +1,5 @@
-groq==0.4.2
-python-telegram-bot==20.7
+groq==1.1.0
+python-telegram-bot==21.3
 requests==2.31.0
 flask==3.0.0
 python-dotenv==1.0.0
