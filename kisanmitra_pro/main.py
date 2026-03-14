@@ -7,6 +7,7 @@ Dashboard: python dashboard/app.py
 Tests:     python -m pytest tests/ -v
 """
 import asyncio
+from keep_alive import keep_alive
 from datetime import datetime, timedelta
 from telegram import Update
 from telegram.ext import (
@@ -132,6 +133,7 @@ def main():
         asyncio.create_task(schedule_morning_alerts(application))
     app.post_init = post_init
 
+    keep_alive()   # 🌐 Starts Flask keep-alive server on port 8080
     print("✅ Bot is LIVE! Press Ctrl+C to stop.")
     print("📊 Dashboard: python dashboard/app.py → http://localhost:8080\n")
     app.run_polling(allowed_updates=Update.ALL_TYPES)
