@@ -134,7 +134,7 @@ def main():
     app.post_init = post_init
 
     print("✅ Bot is LIVE! Press Ctrl+C to stop.\n", flush=True)
-    app.run_polling(allowed_updates=Update.ALL_TYPES)
+    app.run_polling(allowed_updates=Update.ALL_TYPES, stop_signals=None)
 
 
 if __name__ == "__main__":
