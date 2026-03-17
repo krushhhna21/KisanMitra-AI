@@ -27,6 +27,7 @@ def init_db():
             crops       TEXT DEFAULT '[]',
             language    TEXT DEFAULT 'hi',
             alerts      INTEGER DEFAULT 1,
+            email       TEXT DEFAULT '',
             joined_at   TEXT DEFAULT CURRENT_TIMESTAMP,
             last_active TEXT DEFAULT CURRENT_TIMESTAMP
         )
@@ -147,6 +148,12 @@ def init_db():
 
 def upsert_farmer(user_id: int, name: str = "", username: str = ""):
     conn = get_conn()
+    # Migration: Add email column if it doesn't exist
+    try:
+        conn.execute("ALTER TABLE farmers ADD COLUMN email TEXT DEFAULT ''")
+    except sqlite3.OperationalError:
+        pass # Column already exists
+        
     conn.execute("""
         INSERT INTO farmers (user_id, name, username)
         VALUES (?, ?, ?)
@@ -155,6 +162,12 @@ def upsert_farmer(user_id: int, name: str = "", username: str = ""):
             name = COALESCE(NULLIF(excluded.name, ''), farmers.name),
             username = COALESCE(NULLIF(excluded.username, ''), farmers.username)
     """, (user_id, name, username))
+    conn.commit()
+    conn.close()
+
+def update_farmer_email(user_id: int, email: str):
+    conn = get_conn()
+    conn.execute("UPDATE farmers SET email=? WHERE user_id=?", (email, user_id))
     conn.commit()
     conn.close()
 

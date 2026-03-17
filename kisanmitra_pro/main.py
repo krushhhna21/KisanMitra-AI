@@ -24,7 +24,7 @@ from services.schemes import get_crop_calendar
 from handlers.commands import (
     start, help_cmd, weather_cmd, calendar_cmd,
     mandi_cmd, schemes_cmd, satellite_cmd, alerts_cmd, setlocation_cmd,
-    myfield_cmd
+    myfield_cmd, linkemail_cmd
 )
 from handlers.messages import handle_text, handle_voice, handle_photo, handle_location
 from handlers.callbacks import handle_callback
@@ -123,6 +123,7 @@ async def main():
     app.add_handler(CommandHandler("alerts", alerts_cmd))
     app.add_handler(CommandHandler("setlocation", setlocation_cmd))
     app.add_handler(CommandHandler("myfield", myfield_cmd))
+    app.add_handler(CommandHandler("linkemail", linkemail_cmd))
 
     # Soil ConversationHandler (must be before generic message handler)
     app.add_handler(soil_conversation_handler)

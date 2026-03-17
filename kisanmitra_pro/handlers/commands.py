@@ -1,6 +1,6 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import ContextTypes
-from database.db import upsert_farmer, get_farmer, toggle_alerts, get_land_details, get_soil_reports
+from database.db import upsert_farmer, get_farmer, toggle_alerts, get_land_details, get_soil_reports, update_farmer_email
 from services.weather import get_weather
 from services.schemes import get_crop_calendar, find_schemes
 from services.mandi import get_mandi_prices
@@ -114,15 +114,20 @@ async def setlocation_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def myfield_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Show farmer's registered land details and latest soil report."""
     user_id = update.effective_user.id
-    lands   = get_land_details(user_id=user_id)
-    reports = get_soil_reports(user_id=user_id, limit=1)
+    farmer = get_farmer(user_id)
+    email = farmer.get("email", "")
+    
+    # Try looking up by email first (web dashboard), fallback to user_id
+    lands = get_land_details(email=email) if email else get_land_details(user_id=user_id)
+    reports = get_soil_reports(email=email, limit=1) if email else get_soil_reports(user_id=user_id, limit=1)
 
     if not lands:
         await update.message.reply_text(
             "🌍 *Koi khet registered nahi!*\n\n"
             "Dashboard pe jaake apna khet register karein:\n"
-            "_kisanmitra.onrender.com → My Land_\n\n"
-            "Ya pehle /setlocation se apni location set karein.",
+            "🔗 _kisanmitra-ai-g7rk.onrender.com_\n\n"
+            "👉 Agar aapne wahan register kiya hai, toh pehle yahan apna email link karein:\n"
+            "`/linkemail aapka@email.com`",
             parse_mode="Markdown"
         )
         return
@@ -148,7 +153,21 @@ async def myfield_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
             snippet = r['recommendation'][:200]
             msg += f"🤖 _AI Tip: {snippet}..._"
     else:
-        msg += "\n🧪 _Koi soil report nahi. /soilstart se add karein._"
+        msg += "\n🧪 _Koi soil report nahi. Dashboard se add karein._"
 
     msg += "\n\n_Aapka sab data KisanMitra ke jawab mein istemal hota hai. 🌾_"
     await update.message.reply_text(msg, parse_mode="Markdown")
+
+async def linkemail_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Link a Google Dashboard email to this Telegram account"""
+    if not context.args:
+        await update.message.reply_text("📧 Kripya apna dashboard email aise likhein:\n`/linkemail abc@example.com`", parse_mode="Markdown")
+        return
+        
+    email = context.args[0].strip().lower()
+    user_id = update.effective_user.id
+    
+    update_farmer_email(user_id, email)
+    
+    await update.message.reply_text(f"✅ Aapka account `{email}` se link ho gaya hai!\nAb aap /myfield check kar sakte hain.", parse_mode="Markdown")
+
