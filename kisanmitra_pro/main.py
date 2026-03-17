@@ -104,7 +104,7 @@ def print_banner():
 
 
 # === MAIN ===
-def main():
+async def main():
     init_db()
     print_banner()
 
@@ -140,9 +140,22 @@ def main():
     app.post_init = post_init
 
     print("✅ Bot is LIVE! Press Ctrl+C to stop.\n", flush=True)
-    app.run_polling(allowed_updates=Update.ALL_TYPES, stop_signals=None)
+
+    # Initialize and start polling natively async
+    await app.initialize()
+    await app.start()
+    await app.updater.start_polling(allowed_updates=Update.ALL_TYPES)
 
 
 if __name__ == "__main__":
     keep_alive()   # 🌐 Only start keep-alive when running standalone
-    main()
+    
+    # Run the async main func
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
+    
+    # Keep the loop running for the polling
+    try:
+        loop.run_forever()
+    except KeyboardInterrupt:
+        pass

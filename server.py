@@ -27,7 +27,12 @@ def start_bot():
         from main import main
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        main()
+        
+        # Run main() which starts the app and polling
+        loop.run_until_complete(main())
+        
+        # Keep the event loop running forever so the bot keeps polling
+        loop.run_forever()
     except Exception as e:
         print(f"❌ BOT THREAD CRASHED: {e}", flush=True)
         traceback.print_exc()
