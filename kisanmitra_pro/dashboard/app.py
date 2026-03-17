@@ -25,8 +25,13 @@ from database.db import (
     get_soil_reports, save_soil_report
 )
 
+from werkzeug.middleware.proxy_fix import ProxyFix
+
 app = Flask(__name__)
 app.secret_key = FLASK_SECRET_KEY
+
+# Tell Flask it is behind a reverse proxy (Render) so url_for generates HTTPS links
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
 # ── Google OAuth ──────────────────────────────────────────────────────────────
 oauth = OAuth(app)
