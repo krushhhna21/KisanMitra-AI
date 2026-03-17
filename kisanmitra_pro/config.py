@@ -27,3 +27,9 @@ MANDI_API_KEY = os.environ.get("MANDI_API_KEY", "")
 MAX_HISTORY = 8
 MORNING_ALERT_HOUR = 7
 VERSION = "2.0.0"
+
+# === DASHBOARD AUTH ===
+GOOGLE_CLIENT_ID     = os.environ.get("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
+FLASK_SECRET_KEY     = os.environ.get("FLASK_SECRET_KEY", "kisanmitra-change-in-prod")
+DASHBOARD_PORT       = int(os.environ.get("PORT", 8080))

@@ -23,10 +23,12 @@ from services.weather import get_weather
 from services.schemes import get_crop_calendar
 from handlers.commands import (
     start, help_cmd, weather_cmd, calendar_cmd,
-    mandi_cmd, schemes_cmd, satellite_cmd, alerts_cmd, setlocation_cmd
+    mandi_cmd, schemes_cmd, satellite_cmd, alerts_cmd, setlocation_cmd,
+    myfield_cmd
 )
 from handlers.messages import handle_text, handle_voice, handle_photo, handle_location
 from handlers.callbacks import handle_callback
+from handlers.soil_conversation import soil_conversation_handler
 
 groq_client = Groq(api_key=GROQ_API_KEY)
 
@@ -120,6 +122,10 @@ def main():
     app.add_handler(CommandHandler("satellite", satellite_cmd))
     app.add_handler(CommandHandler("alerts", alerts_cmd))
     app.add_handler(CommandHandler("setlocation", setlocation_cmd))
+    app.add_handler(CommandHandler("myfield", myfield_cmd))
+
+    # Soil ConversationHandler (must be before generic message handler)
+    app.add_handler(soil_conversation_handler)
 
     # Messages
     app.add_handler(CallbackQueryHandler(handle_callback))

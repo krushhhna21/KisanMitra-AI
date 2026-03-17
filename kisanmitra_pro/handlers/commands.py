@@ -1,6 +1,6 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import ContextTypes
-from database.db import upsert_farmer, get_farmer, toggle_alerts
+from database.db import upsert_farmer, get_farmer, toggle_alerts, get_land_details, get_soil_reports
 from services.weather import get_weather
 from services.schemes import get_crop_calendar, find_schemes
 from services.mandi import get_mandi_prices
@@ -19,7 +19,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("🛰️ Crop Health", callback_data="satellite"),
          InlineKeyboardButton("📍 Location Set", callback_data="set_location")],
         [InlineKeyboardButton("📸 Photo Diagnosis", callback_data="photo_help"),
-         InlineKeyboardButton("📊 My Stats", callback_data="my_stats")]
+         InlineKeyboardButton("📊 My Stats", callback_data="my_stats")],
+        [InlineKeyboardButton("🧪 Soil Test", callback_data="soil_start"),
+         InlineKeyboardButton("🌍 My Field", callback_data="my_field")],
     ]
 
     await update.message.reply_text(
@@ -47,10 +49,13 @@ async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 *🗣️ Voice:* Baat karein — main samjhunga
 *📸 Photo:* Bimaar fasal photo → turant diagnosis
 *🛰️ /satellite* — NASA satellite se crop health
+*🧪 /soilstart* — Soil report wizard (pH, NPK)
+*🌍 /myfield* — Aapke khet ki jaankari
 
 *Commands:*
 /start /weather /calendar /mandi
-/schemes /satellite /alerts /setlocation /help""",
+/schemes /satellite /alerts /setlocation
+/soilstart /myfield /help""",
         parse_mode="Markdown")
 
 
@@ -104,3 +109,46 @@ async def setlocation_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "📍 *Location bhejein — sahi mausam ke liye!*",
         parse_mode="Markdown", reply_markup=markup
     )
+
+
+async def myfield_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Show farmer's registered land details and latest soil report."""
+    user_id = update.effective_user.id
+    lands   = get_land_details(user_id=user_id)
+    reports = get_soil_reports(user_id=user_id, limit=1)
+
+    if not lands:
+        await update.message.reply_text(
+            "🌍 *Koi khet registered nahi!*\n\n"
+            "Dashboard pe jaake apna khet register karein:\n"
+            "_kisanmitra.onrender.com → My Land_\n\n"
+            "Ya pehle /setlocation se apni location set karein.",
+            parse_mode="Markdown"
+        )
+        return
+
+    land = lands[0]
+    msg  = (
+        f"🌍 *Aapka Khet*\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n"
+        f"📍 Gaon: *{land['village']}, {land['district']}*, {land['state']}\n"
+        f"🌾 Fasal: *{land['crop_type']}*\n"
+        f"🪨 Mitti: *{land['soil_type']}*\n"
+        f"📐 Area: *{land['area_acres']} acres*\n"
+    )
+
+    if reports:
+        r = reports[0]
+        msg += (
+            f"\n🧪 *Last Soil Report ({r['created_at'][:10]})*\n"
+            f"pH: *{r['ph']}* | N: *{r['nitrogen_kg_ha']}* | P: *{r['phosphorus_kg_ha']}* | K: *{r['potassium_kg_ha']}*\n"
+            f"OM: *{r['organic_matter_pct']}%* | EC: *{r['ec_ds_m']} dS/m*\n\n"
+        )
+        if r.get('recommendation'):
+            snippet = r['recommendation'][:200]
+            msg += f"🤖 _AI Tip: {snippet}..._"
+    else:
+        msg += "\n🧪 _Koi soil report nahi. /soilstart se add karein._"
+
+    msg += "\n\n_Aapka sab data KisanMitra ke jawab mein istemal hota hai. 🌾_"
+    await update.message.reply_text(msg, parse_mode="Markdown")

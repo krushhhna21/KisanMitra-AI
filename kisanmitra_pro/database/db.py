@@ -88,6 +88,56 @@ def init_db():
         )
     """)
 
+    # Dashboard users (Google OAuth logins)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS dashboard_users (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            google_id   TEXT UNIQUE,
+            email       TEXT UNIQUE,
+            name        TEXT,
+            avatar_url  TEXT DEFAULT '',
+            created_at  TEXT DEFAULT CURRENT_TIMESTAMP,
+            last_login  TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # Land details (each farmer's field)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS land_details (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id      INTEGER DEFAULT 0,
+            email        TEXT DEFAULT '',
+            area_acres   REAL DEFAULT 0,
+            crop_type    TEXT DEFAULT '',
+            soil_type    TEXT DEFAULT '',
+            village      TEXT DEFAULT '',
+            district     TEXT DEFAULT '',
+            state        TEXT DEFAULT 'Maharashtra',
+            lat          REAL DEFAULT 0,
+            lon          REAL DEFAULT 0,
+            created_at   TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # Soil reports (lab data + AI recommendation)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS soil_reports (
+            id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+            land_id             INTEGER DEFAULT 0,
+            user_id             INTEGER DEFAULT 0,
+            email               TEXT DEFAULT '',
+            ph                  REAL DEFAULT 0,
+            nitrogen_kg_ha      REAL DEFAULT 0,
+            phosphorus_kg_ha    REAL DEFAULT 0,
+            potassium_kg_ha     REAL DEFAULT 0,
+            organic_matter_pct  REAL DEFAULT 0,
+            moisture_pct        REAL DEFAULT 0,
+            ec_ds_m             REAL DEFAULT 0,
+            recommendation      TEXT DEFAULT '',
+            created_at          TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
     conn.commit()
     conn.close()
     print("✅ Database initialized.")
@@ -256,3 +306,99 @@ def get_analytics() -> dict:
         "top_intents": [dict(r) for r in intents],
         "top_crops": sorted(crop_count.items(), key=lambda x: x[1], reverse=True)[:5]
     }
+
+
+# === DASHBOARD USER OPERATIONS ===
+
+def upsert_dashboard_user(google_id: str, email: str, name: str, avatar_url: str = "") -> dict:
+    conn = get_conn()
+    conn.execute("""
+        INSERT INTO dashboard_users (google_id, email, name, avatar_url)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(google_id) DO UPDATE SET
+            name = excluded.name,
+            avatar_url = excluded.avatar_url,
+            last_login = CURRENT_TIMESTAMP
+    """, (google_id, email, name, avatar_url))
+    conn.commit()
+    row = conn.execute("SELECT * FROM dashboard_users WHERE google_id=?", (google_id,)).fetchone()
+    conn.close()
+    return dict(row) if row else {}
+
+
+def get_dashboard_user_by_email(email: str) -> dict:
+    conn = get_conn()
+    row = conn.execute("SELECT * FROM dashboard_users WHERE email=?", (email,)).fetchone()
+    conn.close()
+    return dict(row) if row else {}
+
+
+# === LAND DETAILS ===
+
+def save_land_details(user_id: int, email: str, area_acres: float, crop_type: str,
+                      soil_type: str, village: str, district: str, state: str,
+                      lat: float, lon: float) -> int:
+    conn = get_conn()
+    cur = conn.execute("""
+        INSERT INTO land_details (user_id, email, area_acres, crop_type, soil_type,
+                                  village, district, state, lat, lon)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (user_id, email, area_acres, crop_type, soil_type, village, district, state, lat, lon))
+    land_id = cur.lastrowid
+    conn.commit()
+    conn.close()
+    return land_id
+
+
+def get_land_details(email: str = "", user_id: int = 0) -> list:
+    conn = get_conn()
+    if email:
+        rows = conn.execute(
+            "SELECT * FROM land_details WHERE email=? ORDER BY created_at DESC", (email,)
+        ).fetchall()
+    else:
+        rows = conn.execute(
+            "SELECT * FROM land_details WHERE user_id=? ORDER BY created_at DESC", (user_id,)
+        ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+# === SOIL REPORTS ===
+
+def save_soil_report(land_id: int, user_id: int, email: str, ph: float,
+                     nitrogen: float, phosphorus: float, potassium: float,
+                     organic_matter: float, moisture: float, ec: float,
+                     recommendation: str) -> int:
+    conn = get_conn()
+    cur = conn.execute("""
+        INSERT INTO soil_reports (land_id, user_id, email, ph, nitrogen_kg_ha,
+                                  phosphorus_kg_ha, potassium_kg_ha, organic_matter_pct,
+                                  moisture_pct, ec_ds_m, recommendation)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (land_id, user_id, email, ph, nitrogen, phosphorus, potassium,
+           organic_matter, moisture, ec, recommendation))
+    report_id = cur.lastrowid
+    conn.commit()
+    conn.close()
+    return report_id
+
+
+def get_soil_reports(email: str = "", user_id: int = 0, limit: int = 10) -> list:
+    conn = get_conn()
+    if email:
+        rows = conn.execute("""
+            SELECT s.*, l.village, l.district, l.crop_type, l.area_acres
+            FROM soil_reports s
+            LEFT JOIN land_details l ON s.land_id = l.id
+            WHERE s.email=? ORDER BY s.created_at DESC LIMIT ?
+        """, (email, limit)).fetchall()
+    else:
+        rows = conn.execute("""
+            SELECT s.*, l.village, l.district, l.crop_type, l.area_acres
+            FROM soil_reports s
+            LEFT JOIN land_details l ON s.land_id = l.id
+            WHERE s.user_id=? ORDER BY s.created_at DESC LIMIT ?
+        """, (user_id, limit)).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]

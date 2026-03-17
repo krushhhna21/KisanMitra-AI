@@ -60,3 +60,15 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 _Har sawaal ek kisan ki madad!_ 🌾""",
             parse_mode="Markdown"
         )
+
+    elif query.data == "soil_start":
+        await query.message.reply_text(
+            "🧪 *Soil Report Wizard Start!*\n\n"
+            "Apni mitti ki jaanch ke result daalein aur main AI analysis karoonga.\n\n"
+            "*Shuru karein:* /soilstart",
+            parse_mode="Markdown"
+        )
+
+    elif query.data == "my_field":
+        from handlers.commands import myfield_cmd
+        await myfield_cmd(update, context)
