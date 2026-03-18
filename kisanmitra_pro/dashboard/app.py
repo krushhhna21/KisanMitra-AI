@@ -187,66 +187,181 @@ LOGIN_HTML = """<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>KisanMitra — Sign In</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <title>KisanMitra AI — The Future of Farming</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    *{margin:0;padding:0;box-sizing:border-box;}
-    body{font-family:'Inter',sans-serif;min-height:100vh;display:flex;align-items:center;
-      justify-content:center;background:#0a1628;overflow:hidden;position:relative;}
-    /* Animated blobs */
-    .blob{position:absolute;border-radius:50%;filter:blur(80px);opacity:.25;animation:float 8s ease-in-out infinite;}
-    .blob1{width:400px;height:400px;background:#22c55e;top:-100px;left:-100px;animation-delay:0s;}
-    .blob2{width:300px;height:300px;background:#16a34a;bottom:-80px;right:-80px;animation-delay:3s;}
-    .blob3{width:250px;height:250px;background:#15803d;top:40%;left:60%;animation-delay:5s;}
-    @keyframes float{0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(-30px) scale(1.05);}}
-    /* Card */
-    .card{position:relative;z-index:10;background:rgba(17,31,56,.85);backdrop-filter:blur(24px);
-      border:1px solid rgba(34,197,94,.2);border-radius:24px;padding:48px 40px;width:420px;
-      text-align:center;box-shadow:0 25px 60px rgba(0,0,0,.5);}
-    .logo{font-size:48px;margin-bottom:8px;}
-    h1{font-size:26px;font-weight:700;color:#22c55e;margin-bottom:4px;}
-    .tagline{font-size:13px;color:#64748b;margin-bottom:32px;}
-    .divider{display:flex;align-items:center;gap:12px;margin:28px 0;color:#334155;font-size:12px;}
-    .divider::before,.divider::after{content:'';flex:1;height:1px;background:#1e3352;}
-    /* Google button */
-    .btn-google{display:flex;align-items:center;justify-content:center;gap:12px;
-      background:#fff;color:#111;padding:13px 24px;border-radius:10px;font-size:15px;
-      font-weight:600;cursor:pointer;border:none;width:100%;transition:.2s;text-decoration:none;}
-    .btn-google:hover{background:#f0fdf4;transform:translateY(-1px);box-shadow:0 8px 20px rgba(34,197,94,.2);}
-    .btn-google img{width:20px;height:20px;}
-    .footer{margin-top:28px;font-size:11px;color:#334155;}
-    .features{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:24px 0;text-align:left;}
-    .feat{display:flex;align-items:center;gap:8px;font-size:12px;color:#94a3b8;}
-    .feat span{font-size:14px;}
+    :root {
+      --primary: #16a34a; --primary-focus: #15803d;
+      --bg: #0f172a; --surface: #1e293b; --text: #f8fafc; --muted: #94a3b8;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Outfit', sans-serif; background:var(--bg); color:var(--text); overflow-x:hidden; scroll-behavior: smooth; }
+    
+    /* Navigation */
+    nav { position:fixed; top:0; width:100%; padding:20px 40px; display:flex; justify-content:space-between; align-items:center; z-index:100; backdrop-filter:blur(10px); background:rgba(15,23,42,0.6); border-bottom:1px solid rgba(255,255,255,0.05); }
+    .logo { font-size:24px; font-weight:700; color:#fff; display:flex; align-items:center; gap:8px;}
+    .nav-btn { background:var(--primary); color:#fff; padding:10px 24px; border-radius:30px; text-decoration:none; font-weight:600; font-size:14px; transition:0.3s; display:flex; align-items:center; gap:10px;}
+    .nav-btn:hover { background:var(--primary-focus); transform:translateY(-2px); box-shadow:0 10px 25px rgba(22,163,74,0.4); }
+
+    /* Sections */
+    section { min-height:100vh; display:flex; flex-direction:column; justify-content:center; padding:80px 10%; position:relative; }
+    
+    /* Hero */
+    .hero { background: linear-gradient(to bottom, rgba(15,23,42,0.3), var(--bg)), url('https://images.unsplash.com/photo-1592982537447-6f2aa6c9ef18?q=80&w=2000&auto=format&fit=crop') center/cover no-repeat; align-items:flex-start; text-align:left; }
+    .hero h1 { font-size:5.5rem; font-weight:700; letter-spacing:-1.5px; margin-bottom:20px; line-height:1.1; animation: slideUp 1s ease-out; }
+    .hero h1 span { color:var(--primary); }
+    .hero p { font-family:'Inter', sans-serif; font-size:1.25rem; color: #cbd5e1; max-width:600px; margin-bottom:40px; animation: slideUp 1s ease-out 0.2s backwards; line-height:1.6;}
+    .scroll-indicator { position:absolute; bottom:40px; left:50%; transform:translateX(-50%); animation: bounce 2s infinite; opacity:0.6; }
+    
+    /* Story Layout */
+    .story-grid { display:grid; grid-template-columns:1fr 1fr; gap:80px; align-items:center; }
+    .story-text h2 { font-size:4rem; margin-bottom:24px; line-height:1.1; letter-spacing:-1px;}
+    .story-text p { font-family:'Inter', sans-serif; font-size:1.15rem; color:var(--muted); line-height:1.7; margin-bottom:24px; }
+    .story-img { width:100%; border-radius:24px; box-shadow:0 30px 60px rgba(0,0,0,0.5); object-fit:cover; aspect-ratio:4/3; }
+    .glass-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); padding:40px; border-radius:24px; backdrop-filter:blur(20px); border-left:4px solid var(--primary);}
+    
+    /* Animations */
+    .reveal { opacity:0; transform:translateY(50px); transition:all 1s cubic-bezier(0.2, 0.8, 0.2, 1); }
+    .reveal.active { opacity:1; transform:translateY(0); }
+    
+    @keyframes slideUp { from{opacity:0; transform:translateY(30px);} to{opacity:1; transform:translateY(0);} }
+    @keyframes bounce { 0%,20%,50%,80%,100%{transform:translate(-50%,0);} 40%{transform:translate(-50%,-20px);} 60%{transform:translate(-50%,-10px);} }
+    
+    /* Features Grid */
+    .features-section { text-align:center; }
+    .f-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:30px; margin-top:60px; text-align:left; }
+    .f-card { background:var(--surface); padding:40px 30px; border-radius:20px; border:1px solid rgba(255,255,255,0.05); transition:0.4s; }
+    .f-card:hover { transform:translateY(-10px); background:rgba(30,41,59,0.8); border-color:var(--primary); box-shadow:0 20px 40px rgba(0,0,0,0.3);}
+    .f-icon { font-size:40px; margin-bottom:20px; display:inline-block; padding:15px; background:rgba(22,163,74,0.1); border-radius:16px; color:var(--primary); }
+    .f-title { font-size:1.5rem; margin-bottom:15px; }
+    .f-desc { font-family:'Inter', sans-serif; color:var(--muted); font-size:1rem; line-height:1.6; }
+
+    /* Flash */
+    .flash { position:absolute; top:80px; left:50%; transform:translateX(-50%); background:rgba(239,68,68,0.2); color:#fca5a5; padding:12px 24px; border-radius:30px; font-family:'Inter'; font-size:14px; border:1px solid rgba(239,68,68,0.3); z-index:200;}
+
+    /* Footer / CTA */
+    .cta-section { background:linear-gradient(rgba(15,23,42,0.9), rgba(15,23,42,0.9)), url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2000&auto=format&fit=crop') center/cover; text-align:center; justify-content:center; align-items:center; }
+    .cta-section h2 { font-size:4.5rem; margin-bottom:30px; letter-spacing:-1px;}
+    .google-login-btn { display:inline-flex; align-items:center; gap:15px; background:#fff; color:#000; padding:15px 35px; border-radius:40px; font-size:1.2rem; font-weight:600; text-decoration:none; transition:0.3s; transform:scale(1); }
+    .google-login-btn:hover { transform:scale(1.05); box-shadow:0 20px 40px rgba(255,255,255,0.2); }
+    .google-login-btn img { width:24px; height:24px; }
+
+    @media (max-width:900px) {
+      .story-grid { grid-template-columns:1fr; gap:40px; }
+      .hero h1 { font-size:3.5rem; }
+      .story-text h2 { font-size:2.8rem;}
+      .f-grid { grid-template-columns:1fr; }
+    }
   </style>
 </head>
 <body>
-  <div class="blob blob1"></div>
-  <div class="blob blob2"></div>
-  <div class="blob blob3"></div>
-  <div class="card">
-    <div class="logo">🌾</div>
-    <h1>KisanMitra AI</h1>
-    <p class="tagline">Har khet ka saathi — Every farm's companion</p>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% for cat, msg in messages %}
-        <div style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#f87171;
-          padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;">{{ msg }}</div>
-      {% endfor %}
-    {% endwith %}
-    <div class="features">
-      <div class="feat"><span>📊</span> Analytics</div>
-      <div class="feat"><span>🧪</span> Soil Reports</div>
-      <div class="feat"><span>🌍</span> Land Details</div>
-      <div class="feat"><span>🤖</span> AI Insights</div>
+  <nav>
+    <div class="logo">🌾 KisanMitra AI</div>
+    <a href="{{ url_for('auth_google') }}" class="nav-btn">Sign in to Dashboard</a>
+  </nav>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+      <div class="flash">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <!-- HERO -->
+  <section class="hero">
+    <div style="max-width:800px;">
+      <h1>The Future of <span>Farming</span><br>is Here.</h1>
+      <p>Har Khet Ka Saathi. Empowering Indian farmers with bleeding-edge Vision AI, Voice Assistance, and NASA Satellite Intelligence.</p>
+      <a href="{{ url_for('auth_google') }}" class="google-login-btn" style="margin-top:10px; animation: slideUp 1s ease-out 0.4s backwards;">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G">
+        Get Started with Google
+      </a>
     </div>
-    <div class="divider">Sign in to continue</div>
-    <a href="{{ url_for('auth_google') }}" class="btn-google">
-      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
-      Sign in with Google
+    <div class="scroll-indicator">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 13l5 5 5-5M7 6l5 5 5-5"/></svg>
+    </div>
+  </section>
+
+  <!-- STORY 1 -->
+  <section class="reveal">
+    <div class="story-grid">
+      <div class="story-text">
+        <div style="color:var(--primary); font-weight:700; letter-spacing:2px; margin-bottom:12px; font-size:0.9rem;">AGRICULTURE IS UNPREDICTABLE</div>
+        <h2>Farming is hard. You shouldn't do it alone.</h2>
+        <p>Pest outbreaks can destroy entire harvests overnight. Unpredictable weather washes away months of hard work. Soil degrades silently without proper nutritional balance.</p>
+        <p>For decades, farmers have fought these battles relying on guesswork or delayed expert advice. Not anymore.</p>
+      </div>
+      <div>
+        <img src="https://images.unsplash.com/photo-1595841696677-6489ff3f8c0b?q=80&w=1000&auto=format&fit=crop" class="story-img" alt="Struggling crops">
+      </div>
+    </div>
+  </section>
+
+  <!-- STORY 2 -->
+  <section class="reveal">
+    <div class="story-grid" style="direction:rtl;">
+      <div class="story-text" style="direction:ltr;">
+        <div style="color:var(--primary); font-weight:700; letter-spacing:2px; margin-bottom:12px; font-size:0.9rem;">THE SOLUTION</div>
+        <h2>Meet KisanMitra AI.</h2>
+        <p>A personalized agricultural operating system in your pocket. We merged powerful language models, vision models, and real-time NASA data into a simple Telegram Bot that anyone can use.</p>
+        <div class="glass-card" style="margin-top:30px;">
+          <h3 style="margin-bottom:10px; font-size:1.4rem; color:#fff;">"Urea kitna daalna hai?"</h3>
+          <p style="margin:0; font-style:italic; font-size:1.05rem;">"Tumhare khet ka Nitrogen 140kg/ha hai (low). 2.5 acre zameen ke mutabiq, 50kg Urea aaj daalo." <br><span style="color:var(--primary); margin-top:8px; display:inline-block; font-weight:600; font-style:normal; font-size:0.9rem;">— KisanMitra AI</span></p>
+        </div>
+      </div>
+      <div style="direction:ltr;">
+        <!-- High quality Unsplash representing AI/Tech on farm -->
+        <img src="https://images.unsplash.com/photo-1586771107445-d3af72605b75?q=80&w=1000&auto=format&fit=crop" class="story-img" alt="Tech on farm">
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="features-section reveal">
+    <h2 style="font-size:3.5rem; margin-bottom:20px; letter-spacing:-1px;">Built for the Fields</h2>
+    <p style="color:var(--muted); font-family:'Inter'; max-width:600px; margin:0 auto; font-size:1.15rem;">Advanced AI technologies distilled into simple, highly-accessible tools meant for practical use.</p>
+    
+    <div class="f-grid">
+      <div class="f-card">
+        <div class="f-icon">📸</div>
+        <h3 class="f-title">Vision Diagnosis</h3>
+        <p class="f-desc">Snap a photo of a sick leaf. The Llama Vision model instantly detects the disease, assesses severity, and provides a treatment plan in your local language.</p>
+      </div>
+      <div class="f-card">
+        <div class="f-icon">🗣️</div>
+        <h3 class="f-title">Voice-First Chat</h3>
+        <p class="f-desc">No typing required. Speak your query in Marathi or Hindi. Our Whisper model transcribes it flawlessly, and the AI responds naturally.</p>
+      </div>
+      <div class="f-card">
+        <div class="f-icon">🛰️</div>
+        <h3 class="f-title">Space Intelligence</h3>
+        <p class="f-desc">Using your field's GPS coordinates, we fetch daily radiation, temperature, and humidity from NASA to estimate Crop Stress levels instantly.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section reveal">
+    <h2>Join the Revolution.</h2>
+    <p style="font-family:'Inter'; font-size:1.25rem; margin-bottom:40px; color:#cbd5e1; max-width:600px; margin-left:auto; margin-right:auto; line-height:1.6;">Sign in to the Web Dashboard to register your land parcels, upload lab soil reports, and unlock heavily personalized AI advice.</p>
+    <a href="{{ url_for('auth_google') }}" class="google-login-btn">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G">
+      Login with Google
     </a>
-    <p class="footer">Secure login via Google. Your data stays private.</p>
-  </div>
+  </section>
+
+  <script>
+    // Scroll Reveal Animation (Intersection Observer)
+    const reveals = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if(entry.isIntersecting) {
+          entry.target.classList.add('active');
+        }
+      });
+    }, { threshold: 0.15 });
+    
+    reveals.forEach(reveal => observer.observe(reveal));
+  </script>
 </body>
 </html>"""
 
