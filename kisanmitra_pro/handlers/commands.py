@@ -24,7 +24,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
          InlineKeyboardButton("🌍 My Field", callback_data="my_field")],
     ]
 
-    await update.message.reply_text(
+    await update.effective_message.reply_text(
         f"""🌾 *KisanMitra AI mein swagat hai, {user.first_name or 'Kisan Bhai'} ji!*
 _Har khet ka saathi — Every farm's companion_ v2.0
 
@@ -43,7 +43,7 @@ Sawaal likhein, photo ya voice bhejein! ✍️""",
 
 
 async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("""🌾 *KisanMitra AI — Help*
+    await update.effective_message.reply_text("""🌾 *KisanMitra AI — Help*
 
 *💬 Text:* Koi bhi sawaal Hindi/Marathi/English mein
 *🗣️ Voice:* Baat karein — main samjhunga
@@ -63,41 +63,41 @@ async def weather_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     farmer = get_farmer(update.effective_user.id)
     await context.bot.send_chat_action(update.effective_chat.id, "typing")
     w = get_weather(farmer.get("lat", 18.4088), farmer.get("lon", 76.5604), farmer.get("location", "Latur"))
-    await update.message.reply_text(w["summary"], parse_mode="Markdown")
+    await update.effective_message.reply_text(w["summary"], parse_mode="Markdown")
 
 
 async def calendar_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_chat_action(update.effective_chat.id, "typing")
-    await update.message.reply_text(get_crop_calendar(), parse_mode="Markdown")
+    await update.effective_message.reply_text(get_crop_calendar(), parse_mode="Markdown")
 
 
 async def mandi_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("💰 Kaun si fasal ka bhav?\nExample: *pyaaz, tamatar, gehu, soyabean*", parse_mode="Markdown")
+    await update.effective_message.reply_text("💰 Kaun si fasal ka bhav?\nExample: *pyaaz, tamatar, gehu, soyabean*", parse_mode="Markdown")
 
 
 async def schemes_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("🏛️ Kaun si yojana?\nExample: *PM-KISAN, fasal bima, soil health card*", parse_mode="Markdown")
+    await update.effective_message.reply_text("🏛️ Kaun si yojana?\nExample: *PM-KISAN, fasal bima, soil health card*", parse_mode="Markdown")
 
 
 async def satellite_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     farmer = get_farmer(update.effective_user.id)
     await context.bot.send_chat_action(update.effective_chat.id, "typing")
-    await update.message.reply_text("🛰️ NASA satellite se aapke khet ka analysis ho raha hai... ⏳")
+    await update.effective_message.reply_text("🛰️ NASA satellite se aapke khet ka analysis ho raha hai... ⏳")
     result = get_crop_health(
         farmer.get("lat", 18.4088),
         farmer.get("lon", 76.5604),
         farmer.get("location", "Latur")
     )
-    await update.message.reply_text(result, parse_mode="Markdown")
+    await update.effective_message.reply_text(result, parse_mode="Markdown")
 
 
 async def alerts_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     enabled = toggle_alerts(user_id)
     if enabled:
-        await update.message.reply_text("🔔 *Subah ke alerts ON!*\nRoz 7 baje mausam + farming tip milegi. 🌅", parse_mode="Markdown")
+        await update.effective_message.reply_text("🔔 *Subah ke alerts ON!*\nRoz 7 baje mausam + farming tip milegi. 🌅", parse_mode="Markdown")
     else:
-        await update.message.reply_text("🔕 *Alerts band.*\nPhir ON karne ke liye /alerts.", parse_mode="Markdown")
+        await update.effective_message.reply_text("🔕 *Alerts band.*\nPhir ON karne ke liye /alerts.", parse_mode="Markdown")
 
 
 async def setlocation_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -105,7 +105,7 @@ async def setlocation_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [[KeyboardButton("📍 Apni Location Bhejein", request_location=True)]],
         one_time_keyboard=True, resize_keyboard=True
     )
-    await update.message.reply_text(
+    await update.effective_message.reply_text(
         "📍 *Location bhejein — sahi mausam ke liye!*",
         parse_mode="Markdown", reply_markup=markup
     )
@@ -122,7 +122,7 @@ async def myfield_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reports = get_soil_reports(email=email, limit=1) if email else get_soil_reports(user_id=user_id, limit=1)
 
     if not lands:
-        await update.message.reply_text(
+        await update.effective_message.reply_text(
             "🌍 *Koi khet registered nahi!*\n\n"
             "Dashboard pe jaake apna khet register karein:\n"
             "🔗 _kisanmitra-ai-g7rk.onrender.com_\n\n"
@@ -156,12 +156,12 @@ async def myfield_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         msg += "\n🧪 _Koi soil report nahi. Dashboard se add karein._"
 
     msg += "\n\n_Aapka sab data KisanMitra ke jawab mein istemal hota hai. 🌾_"
-    await update.message.reply_text(msg, parse_mode="Markdown")
+    await update.effective_message.reply_text(msg, parse_mode="Markdown")
 
 async def linkemail_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Link a Google Dashboard email to this Telegram account"""
     if not context.args:
-        await update.message.reply_text("📧 Kripya apna dashboard email aise likhein:\n`/linkemail abc@example.com`", parse_mode="Markdown")
+        await update.effective_message.reply_text("📧 Kripya apna dashboard email aise likhein:\n`/linkemail abc@example.com`", parse_mode="Markdown")
         return
         
     email = context.args[0].strip().lower()
@@ -169,5 +169,5 @@ async def linkemail_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     update_farmer_email(user_id, email)
     
-    await update.message.reply_text(f"✅ Aapka account `{email}` se link ho gaya hai!\nAb aap /myfield check kar sakte hain.", parse_mode="Markdown")
+    await update.effective_message.reply_text(f"✅ Aapka account `{email}` se link ho gaya hai!\nAb aap /myfield check kar sakte hain.", parse_mode="Markdown")
 
