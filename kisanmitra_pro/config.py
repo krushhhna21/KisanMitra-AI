@@ -18,6 +18,8 @@ DEFAULT_LON = 76.5604
 DEFAULT_LOCATION = "Latur, Maharashtra"
 
 # === DATABASE ===
+DATABASE_URL = os.environ.get("DATABASE_URL", "")
+IS_POSTGRES = DATABASE_URL.startswith("postgres")
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "kisanmitra.db")
 
 # === GOVT API ===
