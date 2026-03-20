@@ -98,6 +98,7 @@ Max 300 words. Include emoji for each section."""
 # ═══════════════════════════════════════════════════════════════════════════════
 
 BASE_CSS = """
+<link rel="icon" type="image/jpeg" href="/static/favicon.jpg">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
   *{margin:0;padding:0;box-sizing:border-box;}
