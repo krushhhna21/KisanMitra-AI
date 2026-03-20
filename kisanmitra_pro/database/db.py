@@ -429,7 +429,8 @@ def save_land_details(user_id: int, email: str, area_acres: float, crop_type: st
     # Handle lastrowid for both drivers
     if IS_POSTGRES:
         cur.execute("SELECT LASTVAL()")
-        land_id = cur.fetchone()[0] if not hasattr(cur.fetchone(), 'get') else cur.fetchone()['lastval']
+        res = cur.fetchone()
+        land_id = res[0] if isinstance(res, tuple) else res['lastval']
         # Actually in psycopg2 it's better to use RETURNING id
         # But let's try a simple RETURNING for future edits
     else:
