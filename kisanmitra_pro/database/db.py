@@ -34,6 +34,13 @@ def fmt_query(query):
         return query.replace("?", "%s")
     return query
 
+def serialize_row(r):
+    d = dict(r)
+    for k, v in d.items():
+        if isinstance(v, datetime):
+            d[k] = v.strftime("%Y-%m-%d %H:%M:%S")
+    return d
+
 
 def init_db():
     """Initialize all tables"""
@@ -209,7 +216,7 @@ def get_farmer(user_id: int) -> dict:
     row = cur.fetchone()
     conn.close()
     if row:
-        d = dict(row)
+        d = serialize_row(row)
         d["crops"] = json.loads(d.get("crops", "[]"))
         return d
     return {}
@@ -251,7 +258,7 @@ def get_alert_users() -> list:
     cur.execute("SELECT * FROM farmers WHERE alerts=1")
     rows = cur.fetchall()
     conn.close()
-    return [dict(r) for r in rows]
+    return [serialize_row(r) for r in rows]
 
 
 # === QUERY LOGGING ===
@@ -327,7 +334,7 @@ def get_recent_pest_reports(limit: int = 20) -> list:
     """), (limit,))
     rows = cur.fetchall()
     conn.close()
-    return [dict(r) for r in rows]
+    return [serialize_row(r) for r in rows]
 
 
 # === ANALYTICS ===
@@ -378,8 +385,8 @@ def get_analytics() -> dict:
         "total_farmers": total_farmers,
         "total_queries": total_queries,
         "total_pest_reports": total_pest_reports,
-        "weekly_stats": [dict(r) for r in weekly],
-        "top_intents": [dict(r) for r in intents],
+        "weekly_stats": [serialize_row(r) for r in weekly],
+        "top_intents": [serialize_row(r) for r in intents],
         "top_crops": sorted(crop_count.items(), key=lambda x: x[1], reverse=True)[:5]
     }
 
@@ -401,7 +408,7 @@ def upsert_dashboard_user(google_id: str, email: str, name: str, avatar_url: str
     cur.execute(fmt_query("SELECT * FROM dashboard_users WHERE google_id=?"), (google_id,))
     row = cur.fetchone()
     conn.close()
-    return dict(row) if row else {}
+    return serialize_row(row) if row else {}
 
 
 def get_dashboard_user_by_email(email: str) -> dict:
@@ -410,7 +417,7 @@ def get_dashboard_user_by_email(email: str) -> dict:
     cur.execute(fmt_query("SELECT * FROM dashboard_users WHERE email=?"), (email,))
     row = cur.fetchone()
     conn.close()
-    return dict(row) if row else {}
+    return serialize_row(row) if row else {}
 
 
 # === LAND DETAILS ===
@@ -454,7 +461,7 @@ def get_land_details(email: str = "", user_id: int = 0) -> list:
         )
     rows = cur.fetchall()
     conn.close()
-    return [dict(r) for r in rows]
+    return [serialize_row(r) for r in rows]
 
 
 # === SOIL REPORTS ===
@@ -504,4 +511,4 @@ def get_soil_reports(email: str = "", user_id: int = 0, limit: int = 10) -> list
         """), (user_id, limit))
     rows = cur.fetchall()
     conn.close()
-    return [dict(r) for r in rows]
+    return [serialize_row(r) for r in rows]
