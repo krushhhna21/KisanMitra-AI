@@ -184,12 +184,6 @@ def init_db():
 def upsert_farmer(user_id: int, name: str = "", username: str = ""):
     conn = get_conn()
     cur = get_cursor(conn)
-    # Migration: Add email column if it doesn't exist
-    try:
-        cur.execute("ALTER TABLE farmers ADD COLUMN email TEXT DEFAULT ''")
-    except Exception:
-        pass # Column already exists
-        
     cur.execute(fmt_query("""
         INSERT INTO farmers (user_id, name, username)
         VALUES (?, ?, ?)
