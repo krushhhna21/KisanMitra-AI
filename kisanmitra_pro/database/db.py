@@ -290,6 +290,18 @@ def log_query(user_id: int, query_type: str, message: str,
     conn.close()
 
 
+def get_recent_queries(user_id: int, limit: int = 5) -> list:
+    """Fetch recent chat history from database."""
+    conn = get_conn()
+    cur = get_cursor(conn)
+    cur.execute(fmt_query(
+        "SELECT message, response, created_at FROM queries WHERE user_id=? ORDER BY created_at DESC LIMIT ?"
+    ), (user_id, limit))
+    rows = cur.fetchall()
+    conn.close()
+    return [serialize_row(r) for r in reversed(rows)]
+
+
 # === PEST REPORTS ===
 
 def add_pest_report(user_id: int, lat: float, lon: float, location: str,

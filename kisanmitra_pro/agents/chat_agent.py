@@ -1,23 +1,23 @@
 from groq import Groq
 from config import GROQ_API_KEY, GROQ_CHAT_MODEL, MAX_HISTORY
 from services.weather import get_weather
-from database.db import get_farmer, update_farmer_language, get_land_details, get_soil_reports
+from database.db import get_farmer, update_farmer_language, get_land_details, get_soil_reports, get_recent_queries
 
 groq_client = Groq(api_key=GROQ_API_KEY)
 
-# In-memory conversation history
-_sessions = {}
-
 def get_history(user_id: int) -> list:
-    if user_id not in _sessions:
-        _sessions[user_id] = []
-    return _sessions[user_id]
+    """Fetch chat history directly from the database to retain context across sessions."""
+    queries = get_recent_queries(user_id, limit=MAX_HISTORY)
+    history = []
+    for q in queries:
+        # Add user message
+        if q.get('message'):
+            history.append({"role": "user", "content": q['message']})
+        # Add AI response
+        if q.get('response'):
+            history.append({"role": "assistant", "content": q['response']})
+    return history
 
-def add_to_history(user_id: int, role: str, content: str):
-    h = get_history(user_id)
-    h.append({"role": role, "content": content})
-    if len(h) > MAX_HISTORY:
-        _sessions[user_id] = h[-MAX_HISTORY:]
 
 def detect_intent(message: str) -> str:
     """Detect what farmer is asking about"""
@@ -47,7 +47,7 @@ def detect_language(message: str) -> str:
     return "en"
 
 
-def _build_farmer_context(user_id: int) -> str:
+def _build_farmer_context(user_id: int, email: str = "") -> str:
     """
     Build a rich farmer-profile context block from land details and soil reports.
     This is injected into the system prompt so the AI gives fully personalised answers.
@@ -55,7 +55,7 @@ def _build_farmer_context(user_id: int) -> str:
     lines = []
 
     # --- Land parcels ---
-    lands = get_land_details(user_id=user_id)
+    lands = get_land_details(email=email) if email else get_land_details(user_id=user_id)
     if lands:
         lines.append("\n🌾 FARMER'S REGISTERED FIELDS:")
         for i, land in enumerate(lands[:3], 1):
@@ -67,7 +67,7 @@ def _build_farmer_context(user_id: int) -> str:
             )
 
     # --- Latest soil report ---
-    reports = get_soil_reports(user_id=user_id, limit=1)
+    reports = get_soil_reports(email=email, limit=1) if email else get_soil_reports(user_id=user_id, limit=1)
     if reports:
         r = reports[0]
         ph    = r.get('ph', 0)
@@ -120,12 +120,13 @@ def chat(user_id: int, message: str) -> tuple:
     weather  = get_weather(lat, lon, location)
     intent   = detect_intent(message)
     language = detect_language(message)
+    email    = farmer.get("email", "")
 
     # Save detected language
     update_farmer_language(user_id, language)
 
     crops_info     = f"\nFarmer ki fasalein: {', '.join(crops)}" if crops else ""
-    farmer_context = _build_farmer_context(user_id)
+    farmer_context = _build_farmer_context(user_id, email=email)
 
     system_prompt = f"""You are KisanMitra AI 🌾 — Har khet ka saathi (Every farm's companion).
 Expert AI farming assistant for Indian farmers, Maharashtra focus.
@@ -149,8 +150,7 @@ Max 250 words. Bullet points for clarity.
 Live weather for {location}:
 {weather['summary']}"""
 
-    add_to_history(user_id, "user", message)
-    messages = [{"role": "system", "content": system_prompt}] + get_history(user_id)
+    messages = [{"role": "system", "content": system_prompt}] + get_history(user_id) + [{"role": "user", "content": message}]
 
     try:
         res = groq_client.chat.completions.create(
@@ -160,7 +160,6 @@ Live weather for {location}:
             temperature=0.7
         )
         reply = res.choices[0].message.content.strip()
-        add_to_history(user_id, "assistant", reply)
         return reply, intent, language
     except Exception as e:
         print(f"Chat agent error: {e}")
