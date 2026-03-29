@@ -380,6 +380,137 @@
       background: var(--primary); box-shadow: 0 0 10px var(--primary);
       animation: pulse 1.5s infinite;
     }
+    /* ===== ABOUT / TEAM SECTION ===== */
+    .about-section {
+      padding: 120px 8% 100px;
+      background: #050806;
+      position: relative; overflow: hidden;
+    }
+    .about-section::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(ellipse at 50% 100%, rgba(34,197,94,0.07) 0%, transparent 65%);
+    }
+
+    /* Institution badge */
+    .institution-badge {
+      display: inline-flex; align-items: center; gap: 14px;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 50px; padding: 12px 28px; margin-top: 28px;
+    }
+    .inst-name { font-family: 'Outfit'; font-weight: 700; font-size: 1rem; color: #fff; }
+    .inst-sub  { font-family: 'Inter'; font-size: 0.8rem;  color: #a1b0a6; margin-top: 2px; }
+
+    /* Team grid */
+    .team-grid {
+      display: grid;
+      grid-template-columns: 1.18fr 1fr 1fr;
+      gap: 28px;
+      align-items: start;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    @media (max-width: 900px) { .team-grid { grid-template-columns: 1fr; } }
+
+    /* Base team card */
+    .team-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 24px;
+      padding: 36px 30px;
+      position: relative; overflow: hidden;
+      transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
+      opacity: 0; transform: translateY(40px);
+    }
+    .team-card.visible { opacity: 1; transform: translateY(0); }
+    .team-card:hover   { transform: translateY(-6px); box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+
+    /* CAPTAIN card overrides */
+    .captain-card {
+      border-color: rgba(74,222,128,0.5);
+      background: linear-gradient(160deg, rgba(6,28,16,0.9) 0%, rgba(2,12,6,0.95) 100%);
+      box-shadow: 0 0 60px rgba(74,222,128,0.08) inset;
+    }
+    .captain-card:hover {
+      border-color: var(--primary);
+      box-shadow: 0 0 60px rgba(74,222,128,0.15) inset, 0 20px 50px rgba(0,0,0,0.6);
+    }
+
+    /* Animated glow orb behind captain card */
+    .captain-glow {
+      position: absolute; width: 220px; height: 220px;
+      border-radius: 50%; background: radial-gradient(circle, rgba(74,222,128,0.12) 0%, transparent 70%);
+      top: -60px; right: -60px; pointer-events: none;
+      animation: glowPulse 4s ease-in-out infinite;
+    }
+    @keyframes glowPulse {
+      0%,100% { transform: scale(1);   opacity: 0.6; }
+      50%      { transform: scale(1.2); opacity: 1; }
+    }
+
+    /* Crown ribbon */
+    .captain-crown {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: linear-gradient(90deg, rgba(74,222,128,0.2), rgba(74,222,128,0.05));
+      border: 1px solid rgba(74,222,128,0.35);
+      color: var(--primary); font-family: 'Inter'; font-size: 0.72rem;
+      font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+      border-radius: 30px; padding: 5px 14px; margin-bottom: 20px;
+    }
+
+    /* Avatars */
+    .member-avatar {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: linear-gradient(135deg, #22c55e, #065f46);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.8rem; font-weight: 800; color: #fff;
+      margin-bottom: 20px; position: relative; z-index: 2;
+    }
+    .captain-avatar {
+      width: 86px; height: 86px; font-size: 2.1rem;
+      border: 3px solid rgba(74,222,128,0.6);
+      box-shadow: 0 0 20px rgba(74,222,128,0.3);
+    }
+
+    .member-name {
+      font-size: 1.35rem; font-weight: 700; color: #fff;
+      margin-bottom: 6px; position: relative; z-index: 2;
+    }
+    .captain-card .member-name { font-size: 1.55rem; color: var(--primary); }
+
+    .member-role {
+      font-family: 'Inter'; font-size: 0.88rem; color: #a1b0a6;
+      margin-bottom: 22px; position: relative; z-index: 2;
+    }
+    .captain-card .member-role { color: #d1d5db; font-size: 0.95rem; }
+
+    /* Skill tags */
+    .member-tags {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px;
+      position: relative; z-index: 2;
+    }
+    .mtag {
+      font-family: 'Inter'; font-size: 0.78rem;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 30px; padding: 4px 12px; color: #d1d5db;
+    }
+    .primary-tag {
+      background: rgba(74,222,128,0.1); border-color: rgba(74,222,128,0.3);
+      color: var(--primary);
+    }
+
+    /* Description */
+    .member-desc {
+      font-family: 'Inter'; font-size: 0.88rem; color: #a1b0a6;
+      line-height: 1.7; position: relative; z-index: 2;
+    }
+
+    /* Scroll-reveal for about cards */
+    .about-reveal {
+      opacity: 0; transform: translateY(40px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .about-reveal.visible { opacity: 1; transform: translateY(0); }
+
   </style>
 </head>
 <body>
@@ -817,6 +948,88 @@
     </section>
     <!-- ===== END AI PIPELINE SECTION ===== -->
 
+    <!-- ===== ABOUT US SECTION ===== -->
+    <section class="about-section" id="about">
+
+      <div style="text-align:center; margin-bottom: 60px;">
+        <div class="layer-tag">The Builders</div>
+        <h2 class="layer-title" style="font-size:3rem;">Meet Team KisanMitra</h2>
+        <p class="subtitle" style="margin: 0 auto;">
+          A student-powered team from rural Maharashtra building AI tools that give every Indian farmer the power of precision agriculture.
+        </p>
+        <!-- Institution Badge -->
+        <div class="institution-badge">
+          <span style="font-size:1.4rem;">🏛️</span>
+          <div>
+            <div class="inst-name">VIET Almala, Latur, Maharashtra</div>
+            <div class="inst-sub">Vishal Institute of Engineering & Technology</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="team-grid">
+
+        <!-- ★ CAPTAIN — Krushna Chalwad ★ -->
+        <div class="team-card captain-card about-reveal">
+          <div class="captain-crown">👑 CAPTAIN &amp; TEAM LEAD</div>
+          <div class="member-avatar captain-avatar">K</div>
+          <div class="captain-glow"></div>
+
+          <h3 class="member-name">Chalwad Krushna</h3>
+          <div class="member-role">AI &amp; Backend Lead</div>
+
+          <div class="member-tags">
+            <span class="mtag">🤖 Groq AI Integration</span>
+            <span class="mtag">🐍 Flask API &amp; Architecture</span>
+            <span class="mtag">🗄️ PostgreSQL + Deployment</span>
+            <span class="mtag primary-tag">🎓 Diploma — Computer Engg.</span>
+          </div>
+
+          <div class="member-desc">
+            Architected and built the entire KisanMitra AI backbone — from LLM chat pipelines and vision agents to the PostgreSQL database schema and cloud deployment on Render.
+          </div>
+        </div>
+
+        <!-- Kapse Shradha -->
+        <div class="team-card about-reveal" style="transition-delay: 0.15s;">
+          <div class="member-avatar" style="background: linear-gradient(135deg, #7c3aed, #4f46e5);">S</div>
+          <h3 class="member-name">Kapse Shradha</h3>
+          <div class="member-role">IoT Hardware Lead</div>
+
+          <div class="member-tags">
+            <span class="mtag">📡 ESP8266 Firmware</span>
+            <span class="mtag">🔬 NPK Sensor + RS485</span>
+            <span class="mtag">🔧 Circuit Board Design</span>
+            <span class="mtag primary-tag">🎓 Pharm B</span>
+          </div>
+
+          <div class="member-desc">
+            Designed and programmed the physical IoT sensor stack — building the ESP8266-based NPK &amp; soil probe circuits that feed real field data directly into the AI pipeline.
+          </div>
+        </div>
+
+        <!-- Omkar Kotgire -->
+        <div class="team-card about-reveal" style="transition-delay: 0.30s;">
+          <div class="member-avatar" style="background: linear-gradient(135deg, #0891b2, #0e7490);">O</div>
+          <h3 class="member-name">Omkar Kotgire</h3>
+          <div class="member-role">Dashboard &amp; Data Lead</div>
+
+          <div class="member-tags">
+            <span class="mtag">🖥️ Web Dashboard UI</span>
+            <span class="mtag">🔐 Google OAuth Setup</span>
+            <span class="mtag">📊 Analytics &amp; Frontend</span>
+            <span class="mtag primary-tag">🎓 Pharm D</span>
+          </div>
+
+          <div class="member-desc">
+            Built the farmer monitoring dashboard from scratch — including Google OAuth login, real-time analytics views, soil report forms, and the responsive admin interface.
+          </div>
+        </div>
+
+      </div>
+    </section>
+    <!-- ===== END ABOUT SECTION ===== -->
+
     <!-- CTA -->
     <section class="cta-section">
       <h2 style="font-size: 4rem; letter-spacing: -1px; margin-bottom: 20px;">Deploy to Your Field.</h2>
@@ -1010,6 +1223,18 @@
         });
     }, { threshold: 0.15 });
     pdCards.forEach(c => cardObs.observe(c));
+
+    // ===== ABOUT SECTION scroll-reveals =====
+    const aboutCards = document.querySelectorAll('.about-reveal');
+    const aboutObs = new IntersectionObserver((entries) => {
+        entries.forEach((entry, idx) => {
+            if (entry.isIntersecting) {
+                setTimeout(() => entry.target.classList.add('visible'), idx * 150);
+                aboutObs.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.15 });
+    aboutCards.forEach(c => aboutObs.observe(c));
 
   </script>
 </body>
