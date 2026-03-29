@@ -238,6 +238,147 @@
       .layer-title { font-size: 2.5rem; }
       .tiers-grid { grid-template-columns: 1fr; align-items: stretch; }
       #scroll-track { height: 800vh; }
+      .pipeline-track { flex-direction: column; align-items: center; gap: 0; }
+      .pipe-arrow { transform: rotate(90deg); width: 50px; height: 80px; }
+    }
+
+    /* ===== AI PIPELINE SECTION ===== */
+    .pipeline-section {
+      padding: 120px 6% 80px;
+      background: linear-gradient(180deg, #050806 0%, rgba(6,28,16,0.6) 50%, #050806 100%);
+      position: relative; overflow: hidden;
+    }
+    .pipeline-section::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(ellipse at 50% 40%, rgba(34,197,94,0.06) 0%, transparent 70%);
+    }
+    .pipeline-header { max-width: 800px; margin: 0 auto 60px; }
+
+    /* Horizontal pipeline row */
+    .pipeline-track {
+      display: flex; align-items: flex-start; justify-content: center;
+      gap: 0; flex-wrap: nowrap; overflow-x: auto;
+      padding: 20px 0 40px; position: relative;
+    }
+
+    /* Each step node */
+    .pipe-step {
+      display: flex; flex-direction: column; align-items: center;
+      min-width: 130px; max-width: 140px; flex-shrink: 0;
+      opacity: 0; transform: translateY(30px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .pipe-step.visible { opacity: 1; transform: translateY(0); }
+
+    .pipe-node {
+      width: 76px; height: 76px; border-radius: 50%;
+      border: 2px solid rgba(74,222,128,0.4);
+      background: rgba(6,20,12,0.9);
+      display: flex; align-items: center; justify-content: center;
+      position: relative; transition: border-color 0.3s, box-shadow 0.3s;
+      cursor: default;
+    }
+    .pipe-node:hover { border-color: var(--primary); box-shadow: 0 0 24px rgba(74,222,128,0.35); }
+    .pipe-icon { font-size: 1.9rem; z-index: 2; }
+
+    /* Pulsing ring */
+    .pipe-pulse {
+      position: absolute; inset: -8px; border-radius: 50%;
+      border: 2px solid rgba(74,222,128,0.2);
+      animation: pipeRing 2.5s ease-out infinite;
+    }
+    @keyframes pipeRing {
+      0%   { transform: scale(1); opacity: 0.6; }
+      100% { transform: scale(1.5); opacity: 0; }
+    }
+
+    .pipe-label {
+      margin-top: 16px; text-align: center; padding: 0 4px;
+    }
+    .pipe-num {
+      font-family: 'Inter'; font-size: 0.72rem; font-weight: 700;
+      color: var(--primary); letter-spacing: 2px;
+    }
+    .pipe-label h4 {
+      font-size: 0.95rem; font-weight: 600; color: #fff;
+      margin: 5px 0 6px; line-height: 1.3;
+    }
+    .pipe-label p {
+      font-family: 'Inter'; font-size: 0.78rem; color: #a1b0a6; line-height: 1.5;
+    }
+
+    /* Arrow connector */
+    .pipe-arrow {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: flex-start; padding-top: 28px;
+      width: 80px; flex-shrink: 0; position: relative;
+    }
+    .pipe-arrow svg {
+      width: 80px; height: 20px; overflow: visible;
+    }
+
+    /* Animated particle travelling along arrow */
+    .arrow-particle {
+      position: absolute; top: 36px;
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 0 8px var(--primary);
+      animation: travelArrow 1.2s linear infinite;
+    }
+    @keyframes travelArrow {
+      0%   { left: 0; opacity: 0; }
+      10%  { opacity: 1; }
+      90%  { opacity: 1; }
+      100% { left: calc(100% - 6px); opacity: 0; }
+    }
+
+    /* ── Detail cards ── */
+    .pipeline-details {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+      margin-top: 64px;
+    }
+    @media (max-width: 900px) { .pipeline-details { grid-template-columns: 1fr; } }
+
+    .pd-card {
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 20px; padding: 32px 28px;
+      transition: border-color 0.3s, transform 0.3s;
+      opacity: 0; transform: translateY(40px);
+    }
+    .pd-card.visible { opacity: 1; transform: translateY(0); }
+    .pd-card:hover { border-color: rgba(74,222,128,0.3); transform: translateY(-4px); }
+
+    .pd-badge {
+      display: inline-block; font-family: 'Inter'; font-size: 0.75rem; font-weight: 700;
+      color: var(--primary); letter-spacing: 2px; text-transform: uppercase;
+      background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.2);
+      border-radius: 30px; padding: 4px 14px; margin-bottom: 16px;
+    }
+    .pd-card h5 {
+      font-size: 1.15rem; font-weight: 700; color: #fff; margin-bottom: 16px;
+    }
+    .pd-card ul {
+      list-style: none; padding: 0;
+      font-family: 'Inter'; font-size: 0.9rem; color: #a1b0a6; line-height: 1.8;
+    }
+    .pd-card ul li { padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .pd-card ul li:last-child { border-bottom: none; }
+    .pd-card code {
+      background: rgba(74,222,128,0.1); border-radius: 4px;
+      padding: 1px 6px; font-size: 0.82rem; color: var(--primary);
+    }
+
+    /* Latency badge */
+    .latency-badge {
+      display: inline-flex; align-items: center; gap: 12px;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(74,222,128,0.2);
+      border-radius: 50px; padding: 14px 30px;
+      font-family: 'Inter'; font-size: 1rem; color: #d1d5db;
+    }
+    .lb-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--primary); box-shadow: 0 0 10px var(--primary);
+      animation: pulse 1.5s infinite;
     }
   </style>
 </head>
@@ -478,6 +619,204 @@
       </div>
     </section>
 
+    <!-- ===== AI PIPELINE FLOW SECTION ===== -->
+    <section class="pipeline-section" id="pipeline">
+      <div class="pipeline-header">
+        <div class="layer-tag" style="text-align:center;">Under The Hood</div>
+        <h2 class="layer-title" style="font-size:3.2rem; text-align:center;">How KisanMitra AI Works</h2>
+        <p class="subtitle" style="text-align:center; margin:0 auto 70px auto;">
+          Every query a farmer sends passes through a 6-stage intelligent pipeline — from raw input to precision advice — in under 3 seconds.
+        </p>
+      </div>
+
+      <!-- Desktop Flow: Horizontal pipeline -->
+      <div class="pipeline-track" id="pipeline-track">
+
+        <!-- Step 1 -->
+        <div class="pipe-step" data-step="1">
+          <div class="pipe-node">
+            <div class="pipe-icon">🌾</div>
+            <div class="pipe-pulse"></div>
+          </div>
+          <div class="pipe-label">
+            <span class="pipe-num">01</span>
+            <h4>Farmer Input</h4>
+            <p>Text, voice, or photo via Telegram in Hindi / Marathi / English</p>
+          </div>
+        </div>
+
+        <!-- Arrow 1→2 -->
+        <div class="pipe-arrow" id="arrow-1">
+          <svg viewBox="0 0 120 24" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+            <line x1="0" y1="12" x2="110" y2="12" stroke="url(#flowGrad)" stroke-width="2" stroke-dasharray="6 4"/>
+            <polygon points="110,6 120,12 110,18" fill="#4ade80"/>
+            <defs>
+              <linearGradient id="flowGrad" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#22c55e" stop-opacity="0.3"/>
+                <stop offset="100%" stop-color="#4ade80"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <div class="arrow-particle" style="animation-delay:0s"></div>
+          <div class="arrow-particle" style="animation-delay:0.4s"></div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="pipe-step" data-step="2">
+          <div class="pipe-node">
+            <div class="pipe-icon">🔍</div>
+            <div class="pipe-pulse"></div>
+          </div>
+          <div class="pipe-label">
+            <span class="pipe-num">02</span>
+            <h4>Intent Detection</h4>
+            <p>Rule-based NLU classifies intent: pest / weather / mandi / crop / scheme</p>
+          </div>
+        </div>
+
+        <!-- Arrow 2→3 -->
+        <div class="pipe-arrow" id="arrow-2">
+          <svg viewBox="0 0 120 24" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+            <line x1="0" y1="12" x2="110" y2="12" stroke="url(#flowGrad)" stroke-width="2" stroke-dasharray="6 4"/>
+            <polygon points="110,6 120,12 110,18" fill="#4ade80"/>
+          </svg>
+          <div class="arrow-particle" style="animation-delay:0.2s"></div>
+          <div class="arrow-particle" style="animation-delay:0.6s"></div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="pipe-step" data-step="3">
+          <div class="pipe-node">
+            <div class="pipe-icon">🧠</div>
+            <div class="pipe-pulse"></div>
+          </div>
+          <div class="pipe-label">
+            <span class="pipe-num">03</span>
+            <h4>Context Fusion</h4>
+            <p>Farmer profile + soil NPK + live weather + GPS location merged into prompt</p>
+          </div>
+        </div>
+
+        <!-- Arrow 3→4 -->
+        <div class="pipe-arrow" id="arrow-3">
+          <svg viewBox="0 0 120 24" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+            <line x1="0" y1="12" x2="110" y2="12" stroke="url(#flowGrad)" stroke-width="2" stroke-dasharray="6 4"/>
+            <polygon points="110,6 120,12 110,18" fill="#4ade80"/>
+          </svg>
+          <div class="arrow-particle" style="animation-delay:0.1s"></div>
+          <div class="arrow-particle" style="animation-delay:0.5s"></div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="pipe-step" data-step="4">
+          <div class="pipe-node">
+            <div class="pipe-icon">⚡</div>
+            <div class="pipe-pulse"></div>
+          </div>
+          <div class="pipe-label">
+            <span class="pipe-num">04</span>
+            <h4>LLM / Vision AI</h4>
+            <p>Groq Llama 4 Scout generates or Llama Vision diagnoses from photo (sub-second)</p>
+          </div>
+        </div>
+
+        <!-- Arrow 4→5 -->
+        <div class="pipe-arrow" id="arrow-4">
+          <svg viewBox="0 0 120 24" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+            <line x1="0" y1="12" x2="110" y2="12" stroke="url(#flowGrad)" stroke-width="2" stroke-dasharray="6 4"/>
+            <polygon points="110,6 120,12 110,18" fill="#4ade80"/>
+          </svg>
+          <div class="arrow-particle" style="animation-delay:0.3s"></div>
+          <div class="arrow-particle" style="animation-delay:0.7s"></div>
+        </div>
+
+        <!-- Step 5 -->
+        <div class="pipe-step" data-step="5">
+          <div class="pipe-node">
+            <div class="pipe-icon">🗄️</div>
+            <div class="pipe-pulse"></div>
+          </div>
+          <div class="pipe-label">
+            <span class="pipe-num">05</span>
+            <h4>DB Logging</h4>
+            <p>Response + intent + pest report stored in PostgreSQL for community outbreak tracking</p>
+          </div>
+        </div>
+
+        <!-- Arrow 5→6 -->
+        <div class="pipe-arrow" id="arrow-5">
+          <svg viewBox="0 0 120 24" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+            <line x1="0" y1="12" x2="110" y2="12" stroke="url(#flowGrad)" stroke-width="2" stroke-dasharray="6 4"/>
+            <polygon points="110,6 120,12 110,18" fill="#4ade80"/>
+          </svg>
+          <div class="arrow-particle" style="animation-delay:0.15s"></div>
+          <div class="arrow-particle" style="animation-delay:0.55s"></div>
+        </div>
+
+        <!-- Step 6 -->
+        <div class="pipe-step" data-step="6">
+          <div class="pipe-node" style="border-color: rgba(74,222,128,0.8); box-shadow: 0 0 30px rgba(74,222,128,0.3);">
+            <div class="pipe-icon">📱</div>
+            <div class="pipe-pulse"></div>
+          </div>
+          <div class="pipe-label">
+            <span class="pipe-num">06</span>
+            <h4>Farmer Reply</h4>
+            <p>Personalized voice-native advice delivered to Telegram in farmer's own language</p>
+          </div>
+        </div>
+
+      </div><!-- /pipeline-track -->
+
+      <!-- Detail Cards (Row 2) — deeper explanation per step -->
+      <div class="pipeline-details">
+
+        <div class="pd-card reveal-card">
+          <div class="pd-badge">Input Layer</div>
+          <h5>Multi-modal Raw Input</h5>
+          <ul>
+            <li>📸 JPEG Photo → Base64 encoded for Vision model</li>
+            <li>🗣️ OGG voice → Groq Whisper transcription → text</li>
+            <li>💬 Text message → direct UTF-8 string</li>
+            <li>📍 GPS coordinates → OpenStreetMap reverse geocode → location name</li>
+          </ul>
+        </div>
+
+        <div class="pd-card reveal-card">
+          <div class="pd-badge">Processing Core</div>
+          <h5>Context-Aware AI Engine</h5>
+          <ul>
+            <li>🌾 Field data: area, crop type, soil type, village</li>
+            <li>🧪 Soil NPK: pH, N, P, K, organic matter, EC injected into prompt</li>
+            <li>🌦️ Live weather API overlaid on farmer's GPS location</li>
+            <li>📜 Last 5 chat turns fetched from DB for session continuity</li>
+          </ul>
+        </div>
+
+        <div class="pd-card reveal-card">
+          <div class="pd-badge">Community Safety</div>
+          <h5>Pest Outbreak Broadcast</h5>
+          <ul>
+            <li>🐛 Pest detected in photo → auto-logged in <code>pest_reports</code></li>
+            <li>🔔 If 3+ unique farmers in same location report same pest → ALERT triggered</li>
+            <li>📢 AI generates emergency advisory with pesticide dosage</li>
+            <li>🌐 Pushed to all opted-in farmers in that area via Telegram bot</li>
+          </ul>
+        </div>
+
+      </div><!-- /pipeline-details -->
+
+      <!-- Latency Badge -->
+      <div style="text-align:center; margin-top: 60px;">
+        <div class="latency-badge">
+          <span class="lb-dot"></span>
+          ⚡ Average end-to-end response time: <strong style="color:var(--primary);">&lt; 3 seconds</strong> from input to Telegram reply
+        </div>
+      </div>
+
+    </section>
+    <!-- ===== END AI PIPELINE SECTION ===== -->
+
     <!-- CTA -->
     <section class="cta-section">
       <h2 style="font-size: 4rem; letter-spacing: -1px; margin-bottom: 20px;">Deploy to Your Field.</h2>
@@ -639,6 +978,38 @@
         }
         
     });
+
+    // ===== PIPELINE SECTION: Intersection Observer Animations =====
+    // Stagger pipe-steps into view
+    const pipeSteps = document.querySelectorAll('.pipe-step');
+    const pipeObs = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                // Stagger each step by its data-step index
+                const delay = (parseInt(entry.target.dataset.step) - 1) * 120;
+                setTimeout(() => {
+                    entry.target.classList.add('visible');
+                }, delay);
+                pipeObs.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.2 });
+    pipeSteps.forEach(s => pipeObs.observe(s));
+
+    // Stagger detail cards
+    const pdCards = document.querySelectorAll('.pd-card');
+    const cardObs = new IntersectionObserver((entries) => {
+        entries.forEach((entry, i) => {
+            if (entry.isIntersecting) {
+                setTimeout(() => {
+                    entry.target.classList.add('visible');
+                    entry.target.style.transitionDelay = `${i * 120}ms`;
+                }, i * 130);
+                cardObs.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.15 });
+    pdCards.forEach(c => cardObs.observe(c));
 
   </script>
 </body>
