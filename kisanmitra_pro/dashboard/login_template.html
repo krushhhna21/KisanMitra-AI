@@ -24,19 +24,109 @@
       scroll-behavior: smooth;
     }
     
-    /* Loading Screen */
+    /* ===== Loading Screen ===== */
     #loader {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: #050806; z-index: 9999; display: flex; flex-direction: column;
+      background: radial-gradient(ellipse at 30% 60%, rgba(34,90,55,0.3) 0%, #050806 70%);
+      z-index: 9999; display: flex; flex-direction: column;
       align-items: center; justify-content: center; transition: opacity 0.8s ease;
+      overflow: hidden;
     }
-    .spinner {
-      width: 50px; height: 50px; border: 3px solid rgba(74, 222, 128, 0.2);
-      border-top-color: var(--primary); border-radius: 50%;
-      animation: spin 1s infinite linear; margin-bottom: 20px;
+    /* Animated background grain texture */
+    #loader::before {
+      content: ''; position: absolute; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
     }
-    #loading-text { font-family: 'Inter'; font-size: 1.1rem; color: var(--primary); letter-spacing: 2px;}
-    @keyframes spin { 100% { transform: rotate(360deg); } }
+    #loader-logo {
+      font-size: 1.6rem; font-weight: 700; color: #fff;
+      display: flex; align-items: center; gap: 10px;
+      position: absolute; top: 32px; left: 44px;
+      letter-spacing: -0.5px;
+    }
+    #loader-logo span { color: var(--primary); }
+
+    /* Slides */
+    #slide-container {
+      width: 100%; max-width: 780px; padding: 0 32px;
+      text-align: center; position: relative;
+    }
+    .loader-slide {
+      display: none; flex-direction: column; align-items: center; justify-content: center;
+      animation: slideIn 0.6s cubic-bezier(0.2,0.8,0.2,1);
+    }
+    .loader-slide.active { display: flex; }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    /* Stat / Feature slide */
+    .slide-icon {
+      font-size: 3.5rem; margin-bottom: 20px;
+      background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.25);
+      width: 90px; height: 90px; border-radius: 26px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .slide-heading { font-size: 2.4rem; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 14px; color: #fff; line-height: 1.2; }
+    .slide-heading em { color: var(--primary); font-style: normal; }
+    .slide-body { font-family: 'Inter'; font-size: 1.1rem; color: #a1b0a6; line-height: 1.7; max-width: 560px; }
+    /* Stat badge inside slides */
+    .stat-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(74,222,128,0.12); border: 1px solid rgba(74,222,128,0.3);
+      border-radius: 50px; padding: 10px 22px; margin-top: 22px;
+      font-family: 'Inter'; font-size: 1rem; color: var(--primary); font-weight: 600;
+    }
+    .stat-badge .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); animation: pulse 1.4s infinite; }
+    @keyframes pulse { 0%,100%{opacity:0.4;} 50%{opacity:1;} }
+
+    /* Testimonial slide */
+    .testimonial-card {
+      background: rgba(255,255,255,0.04); backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 24px;
+      padding: 40px 44px; text-align: left; position: relative; overflow: hidden;
+    }
+    .testimonial-card::before {
+      content: '\201C'; font-size: 8rem; color: var(--primary); opacity: 0.12;
+      position: absolute; top: -20px; left: 20px; font-family: Georgia, serif; line-height:1;
+    }
+    .testimonial-quote { font-family: 'Inter'; font-size: 1.15rem; color: #d1d5db; line-height: 1.8; margin-bottom: 28px; position: relative; }
+    .testimonial-author { display: flex; align-items: center; gap: 16px; }
+    .author-avatar {
+      width: 52px; height: 52px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), #065f46);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem; flex-shrink: 0;
+    }
+    .author-name { font-weight: 700; font-size: 1.1rem; color: #fff; }
+    .author-info { font-family: 'Inter'; font-size: 0.9rem; color: #a1b0a6; margin-top: 2px; }
+    .rating { color: #fbbf24; font-size: 1rem; margin-top: 4px; letter-spacing: 1px; }
+
+    /* Progress Bar */
+    #loader-progress-wrap {
+      position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+      width: 340px; text-align: center;
+    }
+    #loader-progress-bar-bg {
+      width: 100%; height: 3px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden;
+    }
+    #loader-progress-bar {
+      height: 100%; width: 0%; background: linear-gradient(90deg, #22c55e, #4ade80);
+      border-radius: 4px; transition: width 0.4s ease;
+    }
+    #loading-text {
+      font-family: 'Inter'; font-size: 0.85rem; color: #a1b0a6;
+      letter-spacing: 1.5px; margin-top: 12px;
+    }
+    /* Slide dots */
+    #slide-dots {
+      display: flex; gap: 8px; justify-content: center; margin-top: 36px;
+    }
+    .dot-btn {
+      width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.2);
+      border: none; cursor: default; transition: all 0.3s; padding: 0;
+    }
+    .dot-btn.active { background: var(--primary); width: 24px; border-radius: 4px; }
 
     /* Navigation */
     nav {
@@ -147,10 +237,111 @@
 </head>
 <body>
   
-  <!-- Loading Screen -->
+  <!-- ===== Cinematic Loading Screen ===== -->
   <div id="loader">
-    <div class="spinner"></div>
-    <div id="loading-text">LOADING ASSETS 0%</div>
+    <!-- Logo top left -->
+    <div id="loader-logo">🌾 KisanMitra<span> AI</span></div>
+    
+    <!-- Slides -->
+    <div id="slide-container">
+
+      <!-- Slide 1: Hero stat -->
+      <div class="loader-slide active" id="ls-0">
+        <div class="slide-icon">🌾</div>
+        <h2 class="slide-heading">Empowering <em>2.5 Lakh+</em><br>Farmers Across India</h2>
+        <p class="slide-body">KisanMitra is India's first AI-powered Telegram farming assistant, delivering precision agriculture intelligence to every farmer — even on basic smartphones with no internet data plan.</p>
+        <div class="stat-badge"><span class="dot"></span> Live across Maharashtra, UP &amp; MP</div>
+      </div>
+
+      <!-- Slide 2: Feature benefit -->
+      <div class="loader-slide" id="ls-1">
+        <div class="slide-icon">🐛</div>
+        <h2 class="slide-heading">Detect Pests in <em>&lt; 5 Seconds</em></h2>
+        <p class="slide-body">Just send a photo of your crop via Telegram. Our Llama 4 Vision AI diagnoses disease, identifies the pest, and delivers an exact pesticide dosage in your own language — Hindi, Marathi, or English.</p>
+        <div class="stat-badge"><span class="dot"></span> 92% diagnosis accuracy on field tests</div>
+      </div>
+
+      <!-- Slide 3: Testimonial -->
+      <div class="loader-slide" id="ls-2">
+        <div class="testimonial-card">
+          <p class="testimonial-quote">"Pehle keede ki wajah se aadhi fasal kharab ho jaati thi. Ab KisanMitra se photo bheji, 5 second mein pata chal gaya aur sahi dawai bhi mili. Is saal yield 40% badh gayi!"</p>
+          <div class="testimonial-author">
+            <div class="author-avatar">👨‍🌾</div>
+            <div>
+              <div class="author-name">Ramesh Patil</div>
+              <div class="author-info">Soybean Farmer · Latur, Maharashtra</div>
+              <div class="rating">★★★★★</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 4: Feature benefit -->
+      <div class="loader-slide" id="ls-3">
+        <div class="slide-icon">📡</div>
+        <h2 class="slide-heading">Real-Time Mandi Prices,<br><em>No App Needed</em></h2>
+        <p class="slide-body">Get live APMC market rates for wheat, soybean, onion, and 50+ crops delivered instantly on Telegram. Know exactly when to sell and maximize your profit every season.</p>
+        <div class="stat-badge"><span class="dot"></span> Updated every 15 minutes from govt. feeds</div>
+      </div>
+
+      <!-- Slide 5: Testimonial -->
+      <div class="loader-slide" id="ls-4">
+        <div class="testimonial-card">
+          <p class="testimonial-quote">"Mandi bhav wala feature ekdum kaam ka hai bhai. Pehle aadatiya jo bolte the woh maan lete the, ab khud rate check karta hoon aur sahi time pe bechta hoon."</p>
+          <div class="testimonial-author">
+            <div class="author-avatar">🧑‍🌾</div>
+            <div>
+              <div class="author-name">Suresh Kumar Yadav</div>
+              <div class="author-info">Wheat Farmer · Kanpur, Uttar Pradesh</div>
+              <div class="rating">★★★★★</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 6: Benefit -->
+      <div class="loader-slide" id="ls-5">
+        <div class="slide-icon">🌧️</div>
+        <h2 class="slide-heading">Weather-Smart <em>Irrigation</em><br>Scheduling</h2>
+        <p class="slide-body">KisanMitra fuses live NASA satellite weather data with your field's GPS to predict rainfall and tell you exactly when to irrigate and when to hold — saving water and preventing root rot.</p>
+        <div class="stat-badge"><span class="dot"></span> Saving avg. 30% water per farm, per season</div>
+      </div>
+
+      <!-- Slide 7: Final testimonial -->
+      <div class="loader-slide" id="ls-6">
+        <div class="testimonial-card">
+          <p class="testimonial-quote">"Soil report feature se pata chala meri zameen mein nitrogen bahut kam tha. KisanMitra ne exact khad ki matra batayi. Pehli baar itni achi gehu ki fasal aayi, sach mein."</p>
+          <div class="testimonial-author">
+            <div class="author-avatar">👩‍🌾</div>
+            <div>
+              <div class="author-name">Savita Devi</div>
+              <div class="author-info">Wheat &amp; Mustard Farmer · Bhopal, MP</div>
+              <div class="rating">★★★★★</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /slide-container -->
+
+    <!-- Slide Navigation Dots -->
+    <div id="slide-dots">
+      <button class="dot-btn active" id="dot-0"></button>
+      <button class="dot-btn" id="dot-1"></button>
+      <button class="dot-btn" id="dot-2"></button>
+      <button class="dot-btn" id="dot-3"></button>
+      <button class="dot-btn" id="dot-4"></button>
+      <button class="dot-btn" id="dot-5"></button>
+      <button class="dot-btn" id="dot-6"></button>
+    </div>
+
+    <!-- Progress Bar at bottom -->
+    <div id="loader-progress-wrap">
+      <div id="loader-progress-bar-bg">
+        <div id="loader-progress-bar"></div>
+      </div>
+      <div id="loading-text">PREPARING YOUR EXPERIENCE — 0%</div>
+    </div>
   </div>
 
   <nav>
@@ -303,27 +494,55 @@
     
     const images = [];
     let imagesLoaded = 0;
-    
+    const SLIDE_COUNT = 7;
+    let currentSlide = 0;
+    let slideInterval = null;
+
+    function goToSlide(index) {
+        // Deactivate all
+        document.querySelectorAll('.loader-slide').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.dot-btn').forEach(d => d.classList.remove('active'));
+        // Activate target
+        const target = document.getElementById(`ls-${index}`);
+        const dot = document.getElementById(`dot-${index}`);
+        if (target) target.classList.add('active');
+        if (dot) dot.classList.add('active');
+        currentSlide = index;
+    }
+
+    // Auto-cycle slides every 2.8s
+    function startSlideShow() {
+        slideInterval = setInterval(() => {
+            goToSlide((currentSlide + 1) % SLIDE_COUNT);
+        }, 2800);
+    }
+    startSlideShow();
+
     // Preload images
     for (let i = 1; i <= frameCount; i++) {
         const img = new Image();
         img.src = currentFrame(i);
         img.onload = () => {
             imagesLoaded++;
-            document.getElementById('loading-text').innerText = `LOADING ASSETS ${Math.floor((imagesLoaded / frameCount) * 100)}%`;
+            const pct = Math.floor((imagesLoaded / frameCount) * 100);
+            document.getElementById('loading-text').innerText = `PREPARING YOUR EXPERIENCE — ${pct}%`;
+            document.getElementById('loader-progress-bar').style.width = `${pct}%`;
             if (imagesLoaded === frameCount) {
+                clearInterval(slideInterval);
                 // Initialize canvas sizes and draw first frame
                 resizeCanvas();
                 window.addEventListener('resize', resizeCanvas);
                 
-                // Hide loader slowly
+                // Hide loader smoothly
                 let loader = document.getElementById('loader');
                 loader.style.opacity = '0';
                 setTimeout(() => loader.style.display = 'none', 800);
             }
         };
+        img.onerror = () => { imagesLoaded++; }; // count errors too so we don't hang
         images.push(img);
     }
+
 
     function resizeCanvas() {
         // High DPI logic for crispness
