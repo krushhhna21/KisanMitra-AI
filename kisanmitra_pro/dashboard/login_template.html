@@ -8,12 +8,12 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --primary: #22c55e;
-      --primary-focus: #16a34a;
-      --bg: #0b1120;
-      --surface: #1e293b;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
+      --primary: #4ade80; /* Soft neon green */
+      --primary-focus: #22c55e;
+      --bg: #0b1410; /* Darker, slightly greenish earth tone to match farmer themes */
+      --surface: rgba(20, 30, 24, 0.75);
+      --text: #ffffff;
+      --text-muted: #a1b0a6;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -22,111 +22,137 @@
       color: var(--text);
       overflow-x: hidden;
       scroll-behavior: smooth;
-      line-height: 1.6;
     }
     
+    /* Loading Screen */
+    #loader {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: #050806; z-index: 9999; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; transition: opacity 0.8s ease;
+    }
+    .spinner {
+      width: 50px; height: 50px; border: 3px solid rgba(74, 222, 128, 0.2);
+      border-top-color: var(--primary); border-radius: 50%;
+      animation: spin 1s infinite linear; margin-bottom: 20px;
+    }
+    #loading-text { font-family: 'Inter'; font-size: 1.1rem; color: var(--primary); letter-spacing: 2px;}
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+
     /* Navigation */
     nav {
       position: fixed; top: 0; width: 100%; padding: 20px 40px; 
       display: flex; justify-content: space-between; align-items: center; 
-      z-index: 100; backdrop-filter: blur(16px); 
-      background: rgba(11,17,32,0.7); border-bottom: 1px solid rgba(255,255,255,0.05);
+      z-index: 1000; backdrop-filter: blur(10px); 
+      background: linear-gradient(to bottom, rgba(11,20,16,0.9) 0%, transparent 100%);
     }
-    .logo { font-size: 24px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px;}
+    .logo { font-size: 24px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; text-shadow: 0 2px 10px rgba(0,0,0,0.5);}
     .nav-btn {
-      background: var(--primary); color: #fff; padding: 12px 28px; 
+      background: var(--primary); color: #000; padding: 12px 28px; 
       border-radius: 30px; text-decoration: none; font-weight: 600; 
       font-size: 15px; transition: 0.3s;
     }
-    .nav-btn:hover { background: var(--primary-focus); transform: translateY(-2px); box-shadow: 0 10px 25px rgba(34,197,94,0.4); }
+    .nav-btn:hover { background: #fff; transform: translateY(-2px); box-shadow: 0 10px 25px rgba(74,222,128,0.4); }
 
-    /* Sections */
-    section { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; padding: 100px 10%; position: relative; }
-    
-    .hero {
-      background: radial-gradient(circle at 50% 120%, rgba(34,197,94,0.15) 0%, transparent 60%), linear-gradient(135deg, #0b1120 0%, #064e3b 100%);
-      align-items: center; text-align: center;
+    /* Canvas Container */
+    #canvas-container {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0;
     }
-    .hero h1 { font-size: 5rem; font-weight: 700; letter-spacing: -1.5px; margin-bottom: 24px; line-height: 1.1; animation: slideUp 1s ease-out; }
-    .hero h1 span { color: var(--primary); }
-    .hero p { font-family: 'Inter', sans-serif; font-size: 1.25rem; color: #cbd5e1; max-width: 800px; margin-bottom: 40px; animation: slideUp 1s ease-out 0.2s backwards; }
-    
-    /* Reveal Animation Framework */
-    .reveal { opacity: 0; transform: translateY(60px); transition: all 1s cubic-bezier(0.2, 0.8, 0.2, 1); }
-    .reveal.active { opacity: 1; transform: translateY(0); }
-    
-    @keyframes slideUp { from{opacity:0; transform:translateY(40px);} to{opacity:1; transform:translateY(0);} }
-    @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+    canvas {
+      width: 100%; height: 100%; object-fit: cover; object-position: center;
+      filter: contrast(1.1) saturate(1.2);
+    }
+    /* Dark gradient over canvas for text readability */
+    .vignette {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;
+      background: radial-gradient(circle at center, transparent 30%, rgba(5,8,6,0.85) 100%),
+                  linear-gradient(to bottom, rgba(5,8,6,0.7) 0%, transparent 20%, rgba(5,8,6,0.9) 80%);
+      pointer-events: none;
+    }
 
-    /* Layers Typography & Structure */
-    .layer-header { display: flex; flex-direction: column; align-items: center; margin-bottom: 60px; text-align: center; }
-    .layer-tag { color: var(--primary); font-weight: 700; letter-spacing: 2px; font-size: 0.9rem; margin-bottom: 12px; text-transform: uppercase; }
-    .layer-title { font-size: 3.5rem; font-weight: 700; letter-spacing: -1px; margin-bottom: 20px; }
-    .layer-desc { font-family: 'Inter', sans-serif; font-size: 1.15rem; color: var(--text-muted); max-width: 600px; }
+    /* Scroll Track - Makes the page scrollable */
+    #scroll-track {
+      position: relative;
+      height: 600vh; /* 6 times viewport height to scrub through frames */
+      z-index: 10;
+    }
 
-    /* Grids */
-    .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; width: 100%; }
+    /* Cinematic Scenes container overlays */
+    .scene {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      padding: 0 10%; pointer-events: none; opacity: 0; transition: opacity 0.5s ease, transform 0.5s ease;
+      transform: translateY(40px); z-index: 10; text-align: center;
+    }
+    .scene.active { opacity: 1; transform: translateY(0); pointer-events: all; }
+
+    /* Typography & Structure */
+    h1 { font-size: 5.5rem; font-weight: 700; letter-spacing: -2px; margin-bottom: 20px; line-height: 1.1; text-shadow: 0 10px 30px rgba(0,0,0,0.8);}
+    h1 span { color: var(--primary); }
+    .subtitle { font-family: 'Inter'; font-size: 1.3rem; color: #d1d5db; max-width: 800px; text-shadow: 0 4px 10px rgba(0,0,0,0.8); margin: 0 auto; }
+    
+    .layer-tag { color: var(--primary); font-weight: 700; letter-spacing: 3px; font-size: 0.9rem; margin-bottom: 15px; text-transform: uppercase; text-shadow: 0 2px 5px rgba(0,0,0,0.8);}
+    .layer-title { font-size: 4rem; font-weight: 700; letter-spacing: -1px; margin-bottom: 20px; text-shadow: 0 5px 20px rgba(0,0,0,0.8);}
+    
+    /* Feature Grids */
+    .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; width: 100%; max-width: 1200px; margin-top: 50px;}
     .feature-card {
-      background: rgba(30,41,59,0.5); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05);
-      padding: 40px 32px; border-radius: 24px; transition: 0.4s; position: relative; overflow: hidden;
+      background: var(--surface); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.08); padding: 40px 32px; border-radius: 24px; 
+      transition: 0.4s; position: relative; overflow: hidden; text-align: left;
     }
-    .feature-card:hover { transform: translateY(-10px); background: rgba(30,41,59,0.8); border-color: var(--primary); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
-    .f-icon { font-size: 36px; margin-bottom: 24px; display: inline-flex; align-items: center; justify-content: center; width: 72px; height: 72px; background: rgba(34,197,94,0.1); border-radius: 20px; color: var(--primary); }
-    .f-title { font-size: 1.5rem; margin-bottom: 15px; font-weight: 600; }
-    .f-desc { font-family: 'Inter', sans-serif; color: var(--text-muted); font-size: 1rem; }
+    .feature-card:hover { transform: translateY(-5px); border-color: rgba(74,222,128,0.5); box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
+    .f-icon { font-size: 32px; margin-bottom: 20px; display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; background: rgba(74,222,128,0.15); border-radius: 16px; border: 1px solid rgba(74,222,128,0.3); color: var(--primary); }
+    .f-title { font-size: 1.5rem; margin-bottom: 12px; font-weight: 600; color: #fff;}
+    .f-desc { font-family: 'Inter', sans-serif; color: var(--text-muted); font-size: 1.05rem; }
 
-    /* Special Interactive Data Input Card */
-    .manual-input-btn {
-      display: inline-block; padding: 12px 24px; background: rgba(255,255,255,0.05); 
-      border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; cursor: pointer;
-      font-family: 'Inter'; font-weight: 500; font-size: 0.9rem; margin-top: 16px; transition: 0.3s;
+    /* Static Bottom Content (Shows after 3D scroll sequence ends) */
+    .static-content {
+      position: relative; z-index: 20; background: #050806; padding-top: 100px;
     }
-    .manual-input-btn:hover { background: rgba(255,255,255,0.1); }
-    .realtime-indicator { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #4ade80; margin-top: 16px; font-family: 'Inter'; font-weight: 500; }
-    .blinking-dot { width: 8px; height: 8px; background: #4ade80; border-radius: 50%; box-shadow: 0 0 10px #4ade80; animation: pulse 1.5s infinite; }
-
-    /* Processing Diagram Visuals */
-    .processing-glow {
-      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-      width: 60vw; height: 60vw; background: radial-gradient(circle, rgba(34,197,94,0.1) 0%, transparent 70%); z-index: -1; pointer-events: none;
-    }
-    .pill-tags { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
-    .pill { padding: 8px 16px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 30px; font-size: 0.9rem; font-family: 'Inter'; }
 
     /* Tiers Section */
-    .tiers-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; align-items: end; }
+    .tiers-section { padding: 100px 10%; text-align: center; }
+    .tiers-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; align-items: end; margin-top: 60px; max-width: 1200px; margin-left: auto; margin-right: auto;}
     .tier-card {
-      background: var(--surface); padding: 40px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.05); 
-      text-align: center; position: relative; transition: 0.3s;
+      background: rgba(20,30,24,0.5); padding: 40px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.05); 
+      text-align: center; transition: 0.3s;
     }
-    .tier-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-    .tier-card.featured { border-color: var(--primary); background: linear-gradient(180deg, rgba(30,41,59,1) 0%, rgba(6,78,59,0.3) 100%); padding-top: 60px; padding-bottom: 60px; }
+    .tier-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); border-color: rgba(255,255,255,0.2); }
+    .tier-card.featured { border-color: var(--primary); background: linear-gradient(180deg, rgba(20,30,24,0.8) 0%, rgba(6,78,59,0.3) 100%); padding-top: 60px; padding-bottom: 60px; }
     .tier-name { font-size: 1.5rem; font-weight: 700; margin-bottom: 10px; }
     .tier-price { font-size: 3rem; font-weight: 700; margin-bottom: 30px; }
-    .tier-features { text-align: left; margin-bottom: 30px; font-family: 'Inter'; color: var(--text-muted); font-size: 1rem; }
+    .tier-features { text-align: left; margin-bottom: 30px; font-family: 'Inter'; color: var(--text-muted); font-size: 1rem; list-style:none;}
     .tier-features li { margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
     .tier-features li::before { content: '✓'; color: var(--primary); font-weight: bold; }
-    
+
     /* Footer CTA */
-    .cta-section { background: #064e3b; align-items: center; text-align: center; }
+    .cta-section { background: linear-gradient(0deg, #050806 0%, #064e3b 100%); align-items: center; text-align: center; padding: 120px 10%; border-top: 1px solid rgba(74,222,128,0.1);}
     .google-login-btn {
       display: inline-flex; align-items: center; gap: 15px; background: #ffffff; color: #000;
       padding: 16px 40px; border-radius: 40px; font-size: 1.2rem; font-weight: 600; text-decoration: none; 
-      transition: 0.3s; box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+      transition: 0.3s; box-shadow: 0 10px 20px rgba(0,0,0,0.4); margin-top: 40px;
     }
-    .google-login-btn:hover { transform: scale(1.05); box-shadow: 0 15px 30px rgba(0,0,0,0.3); }
+    .google-login-btn:hover { transform: scale(1.05); box-shadow: 0 15px 30px rgba(74,222,128,0.3); }
 
     /* Flash Messages */
-    .flash { position: fixed; top: 100px; left: 50%; transform: translateX(-50%); background: rgba(239,68,68,0.2); color: #fca5a5; padding: 12px 24px; border-radius: 30px; font-family: 'Inter'; border: 1px solid rgba(239,68,68,0.3); z-index: 200; backdrop-filter: blur(10px); }
+    .flash { position: fixed; top: 100px; left: 50%; transform: translateX(-50%); background: rgba(239,68,68,0.2); color: #fca5a5; padding: 12px 24px; border-radius: 30px; font-family: 'Inter'; border: 1px solid rgba(239,68,68,0.3); z-index: 2000; backdrop-filter: blur(10px); }
 
     @media (max-width: 900px) {
-      .hero h1 { font-size: 3.5rem; }
+      h1 { font-size: 3.5rem; }
       .layer-title { font-size: 2.5rem; }
       .tiers-grid { grid-template-columns: 1fr; align-items: stretch; }
+      #scroll-track { height: 800vh; }
     }
   </style>
 </head>
 <body>
+  
+  <!-- Loading Screen -->
+  <div id="loader">
+    <div class="spinner"></div>
+    <div id="loading-text">LOADING ASSETS 0%</div>
+  </div>
+
   <nav>
     <div class="logo">🌾 KisanMitra AI</div>
     <a href="{{ url_for('auth_google') }}" class="nav-btn">Access Platform</a>
@@ -138,186 +164,244 @@
     {% endfor %}
   {% endwith %}
 
-  <!-- HERO -->
-  <section class="hero">
-    <div>
-      <h1>The Ultimate Agricultural<br><span>Intelligence Platform</span></h1>
-      <p>A unified ecosystem seamlessly merging IoT sensor data, satellite intelligence, and deep AI capabilities directly into the hands of millions of farmers.</p>
-      <a href="#input-layer" class="nav-btn" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); font-size: 1.1rem; padding: 16px 32px; animation: slideUp 1s ease-out 0.4s backwards;">Explore the Ecosystem ↓</a>
-    </div>
-  </section>
+  <!-- 3D Canvas Background -->
+  <div id="canvas-container">
+    <canvas id="scrolly-canvas"></canvas>
+  </div>
+  <div class="vignette"></div>
 
-  <!-- INPUT LAYER -->
-  <section id="input-layer" class="reveal">
-    <div class="layer-header">
+  <!-- Tall Scroll Track to drive the animation -->
+  <div id="scroll-track">
+    
+    <!-- Scene 0: Hero -->
+    <div class="scene" id="scene-0">
+      <h1>The Ultimate Agricultural<br><span>Intelligence Platform</span></h1>
+      <p class="subtitle">A unified ecosystem seamlessly merging IoT sensor data, satellite intelligence, and deep AI capabilities directly into the hands of millions of farmers.</p>
+    </div>
+
+    <!-- Scene 1: Input -->
+    <div class="scene" id="scene-1">
       <div class="layer-tag">Layer 01</div>
       <h2 class="layer-title">Omni-Channel Inputs</h2>
-      <p class="layer-desc">Capturing real-time contextual data from the field, satellites, and the farmers themselves to form a complete operational picture.</p>
-    </div>
-    
-    <div class="feature-grid">
-      <!-- Farmer Inputs -->
-      <div class="feature-card">
-        <div class="f-icon">👨‍🌾</div>
-        <h3 class="f-title">Farmer Direct</h3>
-        <p class="f-desc">Seamless vernacular input. Farmers can send voice messages, text queries in Hindi/Marathi, or upload crop photos directly via Telegram.</p>
-        <button class="manual-input-btn" onclick="alert('Manual data feed module opened.')">Feed Data Manually</button>
-        <div class="realtime-indicator">
-          <div class="blinking-dot"></div>
-          Last Updated: Just Now (Real-time)
+      <p class="subtitle">Capturing real-time contextual data from the field, satellites, and the farmers themselves.</p>
+      
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="f-icon">👨‍🌾</div>
+          <h3 class="f-title">Farmer Direct</h3>
+          <p class="f-desc">Seamless vernacular input. Farmers can send voice messages, text queries in Hindi/Marathi, or upload crop photos directly via Telegram.</p>
+        </div>
+        <div class="feature-card">
+          <div class="f-icon">📡</div>
+          <h3 class="f-title">IoT Sensors</h3>
+          <p class="f-desc">Hardware integration streaming critical hyper-local metrics: Soil Moisture levels, pH balance, NPK values, and ambient field temperature.</p>
         </div>
       </div>
-      <!-- IoT Sensors -->
-      <div class="feature-card">
-        <div class="f-icon">📡</div>
-        <h3 class="f-title">IoT Sensors</h3>
-        <p class="f-desc">Hardware integration streaming critical hyper-local metrics: Soil Moisture levels, pH balance, NPK values, and ambient field temperature.</p>
-        <div class="pill-tags">
-          <span class="pill">Moisture</span><span class="pill">pH</span><span class="pill">NPK</span>
-        </div>
-      </div>
-      <!-- External Data -->
-      <div class="feature-card">
-        <div class="f-icon">🌍</div>
-        <h3 class="f-title">Macro Data Feeds</h3>
-        <p class="f-desc">Continuous ingestion of macro-level variables including NASA satellite weather data, APMC Mandi prices, and government scheme updates.</p>
-      </div>
     </div>
-  </section>
 
-  <!-- PROCESSING LAYER -->
-  <section id="processing-layer" class="reveal" style="background: rgba(15,23,42,0.4); border-top: 1px solid rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.02);">
-    <div class="processing-glow"></div>
-    <div class="layer-header">
+    <!-- Scene 2: Processing -->
+    <div class="scene" id="scene-2">
       <div class="layer-tag">Layer 02</div>
       <h2 class="layer-title">Cognitive AI Engine</h2>
-      <p class="layer-desc">The brain of KisanMitra. A massive data fusion engine intelligently analyzing inputs to generate precise, localized decisions.</p>
-    </div>
-    
-    <div class="feature-grid">
-      <div class="feature-card">
-        <div class="f-icon">🧠</div>
-        <h3 class="f-title">LLM Chat & Vision</h3>
-        <p class="f-desc">Context-aware conversational agent operating in regional languages. Employs deep vision models for instant pest and disease detection.</p>
-      </div>
-      <div class="feature-card">
-        <div class="f-icon">🌱</div>
-        <h3 class="f-title">Agronomic Intelligence</h3>
-        <p class="f-desc">Specialized algorithms dictating fertilizer recommendations and irrigation schedules based on real-time soil intelligence and weather mapping.</p>
-      </div>
-      <div class="feature-card">
-        <div class="f-icon">⚡</div>
-        <h3 class="f-title">Predictive Fusion</h3>
-        <p class="f-desc">Fusing sensor data with macroscopic weather models to forecast pest outbreaks and yield outcomes, alerting farmers proactively.</p>
+      <p class="subtitle">The brain of KisanMitra. A massive data fusion engine intelligently analyzing inputs.</p>
+      
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="f-icon">🧠</div>
+          <h3 class="f-title">LLM Chat & Vision</h3>
+          <p class="f-desc">Context-aware conversational agent operating in regional languages. Employs deep vision models for instant pest and disease detection.</p>
+        </div>
+        <div class="feature-card">
+          <div class="f-icon">⚡</div>
+          <h3 class="f-title">Predictive Fusion</h3>
+          <p class="f-desc">Fusing sensor data with macroscopic weather models to forecast pest outbreaks and yield outcomes, alerting farmers proactively.</p>
+        </div>
       </div>
     </div>
-  </section>
 
-  <!-- OUTPUT LAYER -->
-  <section id="output-layer" class="reveal">
-    <div class="layer-header">
+    <!-- Scene 3: Output -->
+    <div class="scene" id="scene-3">
       <div class="layer-tag">Layer 03</div>
       <h2 class="layer-title">Smart Actionable Output</h2>
-      <p class="layer-desc">Delivering complex intelligence through highly accessible, low-bandwidth channels optimized for rural connectivity.</p>
-    </div>
-    
-    <div class="feature-grid" style="grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));">
-      <div class="feature-card">
-        <div class="f-icon">📱</div>
-        <h3 class="f-title">Telegram Interface</h3>
-        <p class="f-desc">Works on the lowest-end smartphones. Delivers voice native replies, structured text guidance, and real-time push notifications without requiring app installations.</p>
-      </div>
-      <div class="feature-card">
-        <div class="f-icon">💡</div>
-        <h3 class="f-title">Precision Advice</h3>
-        <p class="f-desc">Generates highly specific advice: "What & when to grow", exactly how much dosage of fertilizer to apply, incoming weather warnings, and optimal market pricing strategies.</p>
-      </div>
-    </div>
-
-    <!-- System Features -->
-    <div style="margin-top: 60px; padding-top: 60px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center;">
-      <h3 style="font-size: 2rem; margin-bottom: 30px;">Cross-Layer Systems Architecture</h3>
-      <div class="pill-tags" style="justify-content: center; max-width: 800px; margin: 0 auto;">
-        <span class="pill">Real-time Push Alerts</span>
-        <span class="pill">Email-based Farmer Profiles</span>
-        <span class="pill">Neon PostgreSQL DB</span>
-        <span class="pill">Auto-Language Translation</span>
-        <span class="pill">Low-Bandwidth Optimized</span>
-        <span class="pill">Scalable Serverless Cloud</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- TIERS -->
-  <section id="tiers" class="reveal" style="background: rgba(15,23,42,0.4);">
-    <div class="layer-header">
-      <div class="layer-tag">Access Levels</div>
-      <h2 class="layer-title">Platform Tiers</h2>
-      <p class="layer-desc">Tailored access levels bridging the gap from traditional farming to precision agriculture.</p>
-    </div>
-
-    <div class="tiers-grid">
-      <div class="tier-card">
-        <h3 class="tier-name">🟢 Tier 1 (Free)</h3>
-        <div class="tier-price">₹0</div>
-        <ul class="tier-features" style="list-style:none; padding:0;">
-          <li>AI Chat Assistant</li>
-          <li>Voice Interactions</li>
-          <li>Basic Photo Analysis</li>
-          <li>Weather Updates</li>
-          <li>Mandi Prices</li>
-        </ul>
-      </div>
+      <p class="subtitle">Delivering complex intelligence through highly accessible, low-bandwidth channels.</p>
       
-      <div class="tier-card featured">
-        <div style="position:absolute; top:20px; right:20px; background:var(--primary); color:#000; font-weight:700; font-size:0.8rem; padding:4px 12px; border-radius:20px;">POPULAR</div>
-        <h3 class="tier-name">🟡 Tier 2 (Smart)</h3>
-        <div class="tier-price">₹499<span style="font-size:1rem; color:var(--text-muted); font-weight:400;">/yr</span></div>
-        <ul class="tier-features" style="list-style:none; padding:0;">
-          <li>Everything in Tier 1</li>
-          <li>Soil Moisture Integration</li>
-          <li>pH Level Tracking</li>
-          <li>Irrigation Alerts</li>
-          <li>Priority Analysis</li>
-        </ul>
-      </div>
-
-      <div class="tier-card">
-        <h3 class="tier-name">🔵 Tier 3 (Pro)</h3>
-        <div class="tier-price">₹1499<span style="font-size:1rem; color:var(--text-muted); font-weight:400;">/yr</span></div>
-        <ul class="tier-features" style="list-style:none; padding:0;">
-          <li>Everything in Tier 2</li>
-          <li>NPK Sensor Integration</li>
-          <li>Full Soil Analytics</li>
-          <li>Hardware Support</li>
-          <li>Complete Precision Farming</li>
-        </ul>
+      <div class="feature-grid" style="grid-template-columns: minmax(auto, 600px); justify-content: center;">
+        <div class="feature-card" style="text-align: center;">
+          <div class="f-icon" style="margin: 0 auto 20px auto;">📱</div>
+          <h3 class="f-title">Telegram Interface</h3>
+          <p class="f-desc">Works on the lowest-end smartphones. Delivers voice native replies, structured text guidance, and real-time push notifications without requiring app installations.</p>
+        </div>
       </div>
     </div>
-  </section>
 
-  <!-- CTA -->
-  <section class="cta-section reveal">
-    <h2 style="font-size: 4rem; letter-spacing: -1px; margin-bottom: 20px;">Deploy to Your Field.</h2>
-    <p style="font-family:'Inter'; font-size:1.25rem; margin-bottom:40px; color:#cbd5e1; max-width:600px; margin-left:auto; margin-right:auto; line-height:1.6;">Sign in via the Dashboard to digitize your farm and enable your AI agent.</p>
-    <a href="{{ url_for('auth_google') }}" class="google-login-btn">
-      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G">
-      Authenticate Securely
-    </a>
-  </section>
+  </div>
 
+  <!-- Continues Standard Flow below the scroll track -->
+  <div class="static-content" id="static-end">
+    <!-- TIERS -->
+    <section class="tiers-section">
+      <div class="layer-tag">Access Levels</div>
+      <h2 class="layer-title" style="font-size: 3rem;">Platform Tiers</h2>
+      <p class="subtitle">Tailored access levels bridging the gap from traditional farming to precision agriculture.</p>
+
+      <div class="tiers-grid">
+        <div class="tier-card">
+          <h3 class="tier-name">🟢 Tier 1 (Free)</h3>
+          <div class="tier-price">₹0</div>
+          <ul class="tier-features">
+            <li>AI Chat Assistant</li>
+            <li>Voice Interactions</li>
+            <li>Basic Photo Analysis</li>
+            <li>Weather Updates & Mandi</li>
+          </ul>
+        </div>
+        
+        <div class="tier-card featured">
+          <div style="position:absolute; top:20px; right:20px; background:var(--primary); color:#000; font-weight:700; font-size:0.8rem; padding:4px 12px; border-radius:20px;">POPULAR</div>
+          <h3 class="tier-name">🟡 Tier 2 (Smart)</h3>
+          <div class="tier-price">₹499<span style="font-size:1rem; color:var(--text-muted); font-weight:400;">/yr</span></div>
+          <ul class="tier-features">
+            <li>Everything in Tier 1</li>
+            <li>Soil Moisture Integration</li>
+            <li>pH Level Tracking</li>
+            <li>Irrigation Alerts</li>
+          </ul>
+        </div>
+
+        <div class="tier-card">
+          <h3 class="tier-name">🔵 Tier 3 (Pro)</h3>
+          <div class="tier-price">₹1499<span style="font-size:1rem; color:var(--text-muted); font-weight:400;">/yr</span></div>
+          <ul class="tier-features">
+            <li>Everything in Tier 2</li>
+            <li>NPK Sensor Integration</li>
+            <li>Full Soil Analytics</li>
+            <li>Hardware Support</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section">
+      <h2 style="font-size: 4rem; letter-spacing: -1px; margin-bottom: 20px;">Deploy to Your Field.</h2>
+      <p class="subtitle">Sign in via the Dashboard to digitize your farm and enable your AI agent.</p>
+      <a href="{{ url_for('auth_google') }}" class="google-login-btn">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G" style="width:24px;">
+        Authenticate Securely
+      </a>
+    </section>
+  </div>
+
+  <!-- JavaScript for Preloading and Canvas Scrolling -->
   <script>
-    // Intersection Observer for scroll animations
-    const reveals = document.querySelectorAll('.reveal');
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if(entry.isIntersecting) {
-          entry.target.classList.add('active');
-        }
-      });
-    }, { threshold: 0.1 });
+    const canvas = document.getElementById('scrolly-canvas');
+    const ctx = canvas.getContext('2d');
     
-    reveals.forEach(reveal => observer.observe(reveal));
+    // Total frames = 79
+    const frameCount = 79;
+    const currentFrame = index => `/static/frames/ezgif-frame-${index.toString().padStart(3, '0')}.jpg`;
+    
+    const images = [];
+    let imagesLoaded = 0;
+    
+    // Preload images
+    for (let i = 1; i <= frameCount; i++) {
+        const img = new Image();
+        img.src = currentFrame(i);
+        img.onload = () => {
+            imagesLoaded++;
+            document.getElementById('loading-text').innerText = `LOADING ASSETS ${Math.floor((imagesLoaded / frameCount) * 100)}%`;
+            if (imagesLoaded === frameCount) {
+                // Initialize canvas sizes and draw first frame
+                resizeCanvas();
+                window.addEventListener('resize', resizeCanvas);
+                
+                // Hide loader slowly
+                let loader = document.getElementById('loader');
+                loader.style.opacity = '0';
+                setTimeout(() => loader.style.display = 'none', 800);
+            }
+        };
+        images.push(img);
+    }
+
+    function resizeCanvas() {
+        // High DPI logic for crispness
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        
+        canvas.width = window.innerWidth * dpr;
+        canvas.height = window.innerHeight * dpr;
+        ctx.scale(dpr, dpr);
+        
+        canvas.style.width = window.innerWidth + 'px';
+        canvas.style.height = window.innerHeight + 'px';
+        
+        if (images[0] && images[0].complete) {
+            updateImage(0);
+        }
+    }
+
+    // Draw Image logic (maintaining aspect ratio 'cover')
+    function updateImage(index) {
+        if (!images[index] || !images[index].complete) return;
+        
+        const img = images[index];
+        const canvasWidth = window.innerWidth;
+        const canvasHeight = window.innerHeight;
+        
+        // Calculate object-fit: cover properties
+        const scale = Math.max(canvasWidth / img.width, canvasHeight / img.height);
+        const x = (canvasWidth / 2) - (img.width / 2) * scale;
+        const y = (canvasHeight / 2) - (img.height / 2) * scale;
+        
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+        ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+    }
+
+    // Animation mapping logic
+    const scenes = [
+      document.getElementById('scene-0'),
+      document.getElementById('scene-1'),
+      document.getElementById('scene-2'),
+      document.getElementById('scene-3')
+    ];
+
+    window.addEventListener('scroll', () => {
+        // Track progress entirely within `#scroll-track`
+        const track = document.getElementById('scroll-track');
+        // Usable distance the user scrolls in the sequence section
+        const scrollDistance = track.offsetHeight - window.innerHeight;
+        
+        // Let scroll fraction cap at 1
+        let scrollFraction = window.scrollY / scrollDistance;
+        if(scrollFraction < 0) scrollFraction = 0;
+        if(scrollFraction > 1) scrollFraction = 1;
+        
+        const frameIndex = Math.min(
+            frameCount - 1,
+            Math.floor(scrollFraction * frameCount)
+        );
+        
+        // Render 3D frame via canvas
+        requestAnimationFrame(() => updateImage(frameIndex));
+        
+        // Sync the scene overlays based on scroll fraction phases
+        // Phase length = 1 / 4 (0.25)
+        scenes.forEach(s => s.classList.remove('active'));
+        
+        if(scrollFraction < 0.15) {
+            scenes[0].classList.add('active'); // Hero
+        } else if (scrollFraction >= 0.15 && scrollFraction < 0.45) {
+            scenes[1].classList.add('active'); // Input
+        } else if (scrollFraction >= 0.45 && scrollFraction < 0.75) {
+            scenes[2].classList.add('active'); // Processing
+        } else if (scrollFraction >= 0.75 && scrollFraction <= 1.0) {
+            scenes[3].classList.add('active'); // Output
+        }
+        
+    });
+
   </script>
 </body>
 </html>
