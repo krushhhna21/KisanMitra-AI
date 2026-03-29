@@ -569,10 +569,17 @@
         const canvasWidth = window.innerWidth;
         const canvasHeight = window.innerHeight;
         
-        // Calculate object-fit: cover — anchor top so farmer's head/upper body is visible
-        const scale = Math.max(canvasWidth / img.width, canvasHeight / img.height);
+        // Scale to show face + chest + phone:
+        // Fit image width to canvas, let the natural height show the upper body
+        const scaleW = canvasWidth / img.width;
+        const scaleH = canvasHeight / img.height;
+        // Use 'contain' logic with a slight upscale so the image fills width
+        // and the top portion (face → chest → phone) is visible
+        const scale = Math.max(scaleW, scaleH * 0.85);
         const x = (canvasWidth / 2) - (img.width / 2) * scale;
-        const y = 0; // Top-anchored: shows head & upper body
+        // Offset slightly down so we skip the very top (hat brim) 
+        // and land on face + chest + smartphone
+        const y = -(img.height * scale * 0.08);
         
         ctx.clearRect(0, 0, canvasWidth, canvasHeight);
         ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
