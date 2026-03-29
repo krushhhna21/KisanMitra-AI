@@ -107,6 +107,38 @@ def _build_farmer_context(user_id: int, email: str = "") -> str:
     return "\n".join(lines) if lines else ""
 
 
+def generate_pest_advisory(pest: str, crop: str, location: str) -> str:
+    """
+    Generate a short, actionable broadcast message for a pest outbreak.
+    """
+    system_prompt = f"""You are KisanMitra AI 🌾.
+A severe outbreak of '{pest}' on '{crop}' has been reported by multiple farmers in {location}.
+Generate an EMERGENCY BROADCAST MESSAGE to alert nearby farmers.
+
+Requirements:
+- Start with a clear RED ALERT 🚨 emoji.
+- Explain the threat briefly.
+- Provide 2-3 immediate STRICT precautions.
+- Provide the EXACT fertilizers/pesticides with dosage to be used.
+- Reply primarily in simple Hindi (or Hinglish) so all Indian farmers can understand.
+- Keep it under 150 words. Do NOT use markdown headers, just simple bold text and bullet points.
+"""
+    messages = [{"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Alert! Outbreak of {pest} on {crop} in {location}. Generate advisory."}]
+    
+    try:
+        res = groq_client.chat.completions.create(
+            model=GROQ_CHAT_MODEL,
+            messages=messages,
+            max_tokens=400,
+            temperature=0.5
+        )
+        return res.choices[0].message.content.strip()
+    except Exception as e:
+        print(f"Pest advisory generation error: {e}")
+        return f"🚨 *ALERT: {pest} on {crop}* detected in your area!\n\nPlease take immediate precautions. Spray recommended pesticides immediately and consult local experts."
+
+
 def chat(user_id: int, message: str) -> tuple:
     """
     Returns: (reply, intent, language)

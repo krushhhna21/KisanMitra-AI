@@ -3,7 +3,6 @@ import psycopg2
 
 app = Flask(__name__)
 
-# 🔴 function to create fresh connection
 def get_connection():
     return psycopg2.connect(
         host="ep-morning-fog-a4uzpxwr.us-east-1.aws.neon.tech",
@@ -21,11 +20,10 @@ def receive_data():
         print("Incoming:", data)
 
         email = data.get("email")
-        moisture = data.get("moisture")
-        ph = data.get("ph")
-        temperature = data.get("temperature")
+        moisture = int(data.get("moisture"))
+        ph = float(data.get("ph"))
+        temperature = int(data.get("temperature"))
 
-        # ✅ NEW CONNECTION EVERY TIME
         conn = get_connection()
         cur = conn.cursor()
 
@@ -35,15 +33,15 @@ def receive_data():
         """, (email, moisture, ph, temperature))
 
         conn.commit()
+
         cur.close()
-        conn.close()   # 🔥 VERY IMPORTANT
+        conn.close()
 
         return jsonify({"status": "success"})
 
     except Exception as e:
-        print("ERROR:", e)
-        return jsonify({"status": "error", "message": str(e)}), 500
-
+        print("🔥 ERROR:", e)
+        return jsonify({"status": "error"}), 200   # ⚠️ IMPORTANT CHANGE
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

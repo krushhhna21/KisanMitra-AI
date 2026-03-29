@@ -255,6 +255,16 @@ def get_alert_users() -> list:
     return [serialize_row(r) for r in rows]
 
 
+def get_alert_users_by_location(location: str) -> list:
+    conn = get_conn()
+    cur = get_cursor(conn)
+    # Match location loosely to capture nearby users
+    cur.execute(fmt_query("SELECT * FROM farmers WHERE alerts=1 AND location LIKE ?"), (f"%{location}%",))
+    rows = cur.fetchall()
+    conn.close()
+    return [serialize_row(r) for r in rows]
+
+
 # === QUERY LOGGING ===
 
 def log_query(user_id: int, query_type: str, message: str,
@@ -341,6 +351,31 @@ def get_recent_pest_reports(limit: int = 20) -> list:
     rows = cur.fetchall()
     conn.close()
     return [serialize_row(r) for r in rows]
+
+
+def check_pest_outbreak(location: str, pest: str, days: int = 7, threshold: int = 3) -> bool:
+    """
+    Check if at least `threshold` unique farmers reported `pest`
+    in `location` within the last `days`.
+    """
+    conn = get_conn()
+    cur = get_cursor(conn)
+    
+    if IS_POSTGRES:
+        date_clause = f"created_at >= NOW() - INTERVAL '{days} days'"
+    else:
+        date_clause = f"created_at >= date('now', '-{days} days')"
+        
+    cur.execute(fmt_query(f"""
+        SELECT COUNT(DISTINCT user_id) as c
+        FROM pest_reports
+        WHERE pest = ? AND location LIKE ? AND {date_clause}
+    """), (pest, f"%{location}%"))
+    
+    row = cur.fetchone()
+    conn.close()
+    count = row["c"] if row else 0
+    return count >= threshold
 
 
 # === ANALYTICS ===

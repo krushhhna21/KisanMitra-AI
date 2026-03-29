@@ -1,13 +1,15 @@
+import asyncio
 import requests
 from telegram import Update
 from telegram.ext import ContextTypes
-from agents.chat_agent import chat
+from agents.chat_agent import chat, generate_pest_advisory
 from agents.vision_agent import analyze_crop_photo
 from agents.voice_agent import transcribe_voice
 from services.mandi import get_mandi_prices
 from services.schemes import find_schemes
 from database.db import (
-    log_query, upsert_farmer, update_farmer_location, add_pest_report, get_farmer
+    log_query, upsert_farmer, update_farmer_location, add_pest_report, get_farmer,
+    check_pest_outbreak, get_alert_users_by_location
 )
 
 MANDI_KEYWORDS = ["bhav", "price", "rate", "mandi", "bazar", "pyaaz", "tamatar",
@@ -92,6 +94,28 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 photo_id=photo.file_id
             )
             analysis += f"\n\n📍 _Yeh pest report community map mein add ho gaya. Aas-paas ke kisan alert honge!_ 🗺️"
+
+            # Check if this crosses the threshold for a pest outbreak alert
+            if check_pest_outbreak(farmer.get("location", "Latur"), pest_detected, days=7, threshold=3):
+                alert_users = get_alert_users_by_location(farmer.get("location", "Latur"))
+                
+                if alert_users:
+                    # Generate the advisory text with precautions and fertilizers
+                    advisory = generate_pest_advisory(pest_detected, crop_detected, farmer.get("location", "Latur"))
+                    
+                    # Broadcast to affected users silently in the background
+                    for auth_user in alert_users:
+                        uid = auth_user["user_id"]
+                        if uid != user.id:
+                            try:
+                                await context.bot.send_message(
+                                    chat_id=uid,
+                                    text=advisory,
+                                    parse_mode="Markdown"
+                                )
+                                await asyncio.sleep(0.1)  # tiny delay to avoid hitting Telegram API limits instantly
+                            except Exception as be:
+                                print(f"Broadcast failed for {uid}: {be}")
 
         await update.message.reply_text(analysis, parse_mode="Markdown")
         await update.message.reply_text("💬 Koi aur sawaal? Main hamesha yahan hoon. 🌾")
