@@ -350,10 +350,10 @@
         const canvasWidth = window.innerWidth;
         const canvasHeight = window.innerHeight;
         
-        // Calculate object-fit: cover properties
+        // Calculate object-fit: cover — anchor top so farmer's head/upper body is visible
         const scale = Math.max(canvasWidth / img.width, canvasHeight / img.height);
         const x = (canvasWidth / 2) - (img.width / 2) * scale;
-        const y = (canvasHeight / 2) - (img.height / 2) * scale;
+        const y = 0; // Top-anchored: shows head & upper body
         
         ctx.clearRect(0, 0, canvasWidth, canvasHeight);
         ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
