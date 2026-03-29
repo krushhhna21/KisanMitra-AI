@@ -27,10 +27,16 @@
     /* ===== Loading Screen ===== */
     #loader {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: radial-gradient(ellipse at 30% 60%, rgba(34,90,55,0.3) 0%, #050806 70%);
+      /* Fully opaque — nothing behind should show through */
+      background: #050806;
       z-index: 9999; display: flex; flex-direction: column;
       align-items: center; justify-content: center; transition: opacity 0.8s ease;
       overflow: hidden;
+    }
+    /* Subtle green ambient glow (kept as pseudo so main bg stays opaque) */
+    #loader::after {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(ellipse at 30% 60%, rgba(34,90,55,0.25) 0%, transparent 65%);
     }
     /* Animated background grain texture */
     #loader::before {
@@ -485,6 +491,9 @@
 
   <!-- JavaScript for Preloading and Canvas Scrolling -->
   <script>
+    // Prevent page from scrolling while loader is active
+    document.body.style.overflow = 'hidden';
+
     const canvas = document.getElementById('scrolly-canvas');
     const ctx = canvas.getContext('2d');
     
@@ -533,10 +542,13 @@
                 resizeCanvas();
                 window.addEventListener('resize', resizeCanvas);
                 
-                // Hide loader smoothly
+                // Hide loader smoothly then restore scrolling
                 let loader = document.getElementById('loader');
                 loader.style.opacity = '0';
-                setTimeout(() => loader.style.display = 'none', 800);
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                    document.body.style.overflow = ''; // re-enable scroll
+                }, 800);
             }
         };
         img.onerror = () => { imagesLoaded++; }; // count errors too so we don't hang
