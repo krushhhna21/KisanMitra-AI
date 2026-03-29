@@ -380,6 +380,151 @@
       background: var(--primary); box-shadow: 0 0 10px var(--primary);
       animation: pulse 1.5s infinite;
     }
+
+    /* ===== TELEGRAM BOT CARD SECTION ===== */
+    .tg-section {
+      padding: 80px 6% 100px;
+      background: #050806;
+      display: flex; justify-content: center;
+    }
+    .tg-card {
+      position: relative; overflow: hidden;
+      max-width: 900px; width: 100%;
+      border-radius: 32px;
+      background: linear-gradient(135deg, #0f1b26 0%, #0b1721 50%, #0e1c10 100%);
+      border: 1px solid rgba(74,222,128,0.2);
+      padding: 64px 56px;
+      display: flex; align-items: center; gap: 56px;
+      box-shadow: 0 0 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
+      opacity: 0; transform: translateY(40px);
+      transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+    .tg-card.visible { opacity: 1; transform: translateY(0); }
+    @media (max-width: 700px) {
+      .tg-card { flex-direction: column; padding: 40px 28px; text-align: center; }
+    }
+
+    /* Diagonal animated beam */
+    .tg-beam {
+      position: absolute; top: -50%; left: -10%;
+      width: 60%; height: 200%;
+      background: linear-gradient(105deg, transparent 40%, rgba(37,183,255,0.06) 50%, transparent 60%);
+      animation: sweepBeam 4s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes sweepBeam {
+      0%   { transform: translateX(-30%); }
+      50%  { transform: translateX(160%); }
+      100% { transform: translateX(-30%); }
+    }
+
+    /* Corner glow orbs */
+    .tg-orb-1 {
+      position: absolute; width: 300px; height: 300px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(37,183,255,0.1) 0%, transparent 70%);
+      top: -80px; right: -80px; pointer-events: none;
+    }
+    .tg-orb-2 {
+      position: absolute; width: 200px; height: 200px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(74,222,128,0.08) 0%, transparent 70%);
+      bottom: -60px; left: -40px; pointer-events: none;
+    }
+
+    /* Animated floating particles */
+    .tg-particles { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+    .tg-dot {
+      position: absolute; width: 3px; height: 3px; border-radius: 50%;
+      background: rgba(37,183,255,0.6);
+      animation: floatDot var(--dur, 6s) ease-in-out infinite;
+      animation-delay: var(--del, 0s);
+    }
+    @keyframes floatDot {
+      0%,100% { transform: translateY(0) scale(1); opacity: 0.4; }
+      50%      { transform: translateY(-20px) scale(1.4); opacity: 1; }
+    }
+
+    /* Telegram logo icon */
+    .tg-logo-wrap {
+      flex-shrink: 0;
+      width: 120px; height: 120px; border-radius: 32px;
+      background: linear-gradient(135deg, #2aabee, #229ed9);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 40px rgba(37,183,255,0.4), 0 0 80px rgba(37,183,255,0.15);
+      position: relative; z-index: 2;
+      animation: logoFloat 3s ease-in-out infinite;
+    }
+    @keyframes logoFloat {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(-8px); }
+    }
+    .tg-logo-wrap svg { width: 64px; height: 64px; }
+
+    /* Text side */
+    .tg-content { flex: 1; position: relative; z-index: 2; }
+    .tg-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(37,183,255,0.12); border: 1px solid rgba(37,183,255,0.3);
+      border-radius: 30px; padding: 5px 16px; margin-bottom: 18px;
+      font-family: 'Inter'; font-size: 0.78rem; font-weight: 700;
+      color: #79d4f9; letter-spacing: 1.5px; text-transform: uppercase;
+    }
+    .tg-badge-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #2aabee; box-shadow: 0 0 8px #2aabee;
+      animation: pulse 1.4s infinite;
+    }
+    .tg-title {
+      font-size: 2.4rem; font-weight: 700; letter-spacing: -0.5px;
+      color: #fff; margin-bottom: 12px; line-height: 1.2;
+    }
+    .tg-title span { color: #4ade80; }
+    .tg-desc {
+      font-family: 'Inter'; font-size: 1rem; color: #a1b0a6;
+      line-height: 1.7; margin-bottom: 28px; max-width: 460px;
+    }
+
+    /* Fake typing indicator */
+    .tg-typing {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: rgba(255,255,255,0.05); border-radius: 20px;
+      padding: 8px 16px; margin-bottom: 28px;
+      font-family: 'Inter'; font-size: 0.82rem; color: #a1b0a6;
+    }
+    .typing-dots span {
+      display: inline-block; width: 5px; height: 5px; border-radius: 50%;
+      background: #2aabee; margin: 0 1px;
+      animation: typingBounce 1.2s infinite;
+    }
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typingBounce {
+      0%,80%,100% { transform: translateY(0); opacity: 0.4; }
+      40%          { transform: translateY(-5px); opacity: 1; }
+    }
+
+    /* CTA button */
+    .tg-btn {
+      display: inline-flex; align-items: center; gap: 12px;
+      background: linear-gradient(135deg, #2aabee, #229ed9);
+      color: #fff; font-family: 'Outfit'; font-size: 1.05rem; font-weight: 700;
+      padding: 16px 32px; border-radius: 50px;
+      text-decoration: none; transition: 0.3s;
+      box-shadow: 0 8px 30px rgba(37,183,255,0.35);
+      position: relative; overflow: hidden;
+    }
+    .tg-btn::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+      opacity: 0; transition: 0.3s;
+    }
+    .tg-btn:hover { transform: translateY(-3px) scale(1.03); box-shadow: 0 16px 40px rgba(37,183,255,0.5); }
+    .tg-btn:hover::before { opacity: 1; }
+    .tg-link {
+      font-family: 'Inter'; font-size: 0.82rem; color: #a1b0a6;
+      margin-top: 14px; display: block;
+    }
+    .tg-link a { color: #4ade80; text-decoration: none; }
+    .tg-link a:hover { text-decoration: underline; }
     /* ===== ABOUT / TEAM SECTION ===== */
     .about-section {
       padding: 120px 8% 100px;
@@ -1030,6 +1175,67 @@
     </section>
     <!-- ===== END ABOUT SECTION ===== -->
 
+    <!-- ===== TELEGRAM BOT CARD ===== -->
+    <section class="tg-section">
+      <div class="tg-card" id="tg-card">
+
+        <!-- Decorative elements -->
+        <div class="tg-beam"></div>
+        <div class="tg-orb-1"></div>
+        <div class="tg-orb-2"></div>
+        <div class="tg-particles">
+          <div class="tg-dot" style="left:15%;  top:20%; --dur:5s;  --del:0s;"></div>
+          <div class="tg-dot" style="left:30%;  top:70%; --dur:7s;  --del:1s;"></div>
+          <div class="tg-dot" style="left:55%;  top:35%; --dur:6s;  --del:2s;"></div>
+          <div class="tg-dot" style="left:70%;  top:80%; --dur:8s;  --del:0.5s;"></div>
+          <div class="tg-dot" style="left:85%;  top:15%; --dur:5.5s;--del:1.5s;"></div>
+          <div class="tg-dot" style="left:90%;  top:55%; --dur:7s;  --del:3s;"></div>
+        </div>
+
+        <!-- Telegram Logo -->
+        <div class="tg-logo-wrap">
+          <!-- Official Telegram paper-plane SVG -->
+          <svg viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M120 0C53.726 0 0 53.726 0 120s53.726 120 120 120 120-53.726 120-120S186.274 0 120 0z" fill="#FFF" fill-opacity="0"/>
+            <path d="M54.233 117.893L175.1 70.6c5.618-2.033 10.53.997 8.713 9.178l-20.52 96.64c-1.503 6.732-5.508 8.373-11.162 5.2l-30.3-22.328-14.626 14.082c-1.62 1.62-2.975 2.975-6.102 2.975l2.178-30.9 56.19-50.77c2.444-2.172-.531-3.378-3.787-1.205L77.9 164.75l-30.04-9.39c-6.53-2.045-6.666-6.53 1.373-9.467z" fill="white"/>
+          </svg>
+        </div>
+
+        <!-- Content -->
+        <div class="tg-content">
+          <div class="tg-badge">
+            <span class="tg-badge-dot"></span>
+            Bot is Live &amp; Active
+          </div>
+
+          <h3 class="tg-title">Talk to <span>KisanMitra AI</span><br>on Telegram — Right Now</h3>
+
+          <p class="tg-desc">
+            No app install. No signup. Just open Telegram, hit Start, and ask anything about your crops in Hindi, Marathi, or English. Instant AI answers, pest diagnosis from photos, live market rates — all free.
+          </p>
+
+          <!-- Typing animation -->
+          <div class="tg-typing">
+            <span style="color:#2aabee; font-weight:600;">@mykisanmitra_bot</span> is typing
+            <div class="typing-dots">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+
+          <!-- CTA Button -->
+          <a href="https://t.me/mykisanmitra_bot" target="_blank" rel="noopener" class="tg-btn">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
+              <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-2.04 9.61c-.152.677-.55.842-1.113.524l-3.028-2.232-1.46 1.406c-.162.162-.297.297-.61.297l.218-3.09 5.618-5.073c.245-.217-.053-.338-.38-.12L7.79 15.076l-3.002-.938c-.653-.204-.666-.653.137-.947l11.726-4.52c.544-.196 1.02.12.91.577z"/>
+            </svg>
+            Open in Telegram
+          </a>
+          <div class="tg-link">Direct link: <a href="https://t.me/mykisanmitra_bot" target="_blank">t.me/mykisanmitra_bot</a></div>
+        </div>
+
+      </div>
+    </section>
+    <!-- ===== END TELEGRAM BOT CARD ===== -->
+
     <!-- CTA -->
     <section class="cta-section">
       <h2 style="font-size: 4rem; letter-spacing: -1px; margin-bottom: 20px;">Deploy to Your Field.</h2>
@@ -1235,6 +1441,20 @@
         });
     }, { threshold: 0.15 });
     aboutCards.forEach(c => aboutObs.observe(c));
+
+    // ===== TELEGRAM BOT CARD scroll-reveal =====
+    const tgCard = document.getElementById('tg-card');
+    if (tgCard) {
+        const tgObs = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    tgCard.classList.add('visible');
+                    tgObs.unobserve(tgCard);
+                }
+            });
+        }, { threshold: 0.2 });
+        tgObs.observe(tgCard);
+    }
 
   </script>
 </body>
