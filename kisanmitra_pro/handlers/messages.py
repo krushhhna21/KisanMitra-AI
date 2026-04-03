@@ -44,26 +44,40 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
+    upsert_farmer(user.id, user.first_name or "", user.username or "")
     await context.bot.send_chat_action(update.effective_chat.id, "typing")
     await update.message.reply_text("🗣️ Awaaz sun raha hoon... 🎧")
 
+    # Step 1: Download audio
     try:
         voice_file = await context.bot.get_file(update.message.voice.file_id)
         voice_bytes = await voice_file.download_as_bytearray()
-        text = transcribe_voice(bytes(voice_bytes))
-
-        if text:
-            await update.message.reply_text(f"📝 *Aapne kaha:* _{text}_", parse_mode="Markdown")
-            await context.bot.send_chat_action(update.effective_chat.id, "typing")
-            reply, intent, language = chat(user.id, text)
-            log_query(user.id, "voice", text, reply, intent, language)
-            await update.message.reply_text(reply)
-        else:
-            await update.message.reply_text("🙏 Awaaz samajh nahi aaya. Dobara bolein ya text likhein.")
-
     except Exception as e:
-        print(f"Voice handler error: {e}")
-        await update.message.reply_text("🙏 Voice message mein dikkat. Text mein likhein.")
+        print(f"Voice download error: {e}")
+        await update.message.reply_text("🙏 Voice download nahi hua. Dobara bhejein.")
+        return
+
+    # Step 2: Transcribe
+    text = transcribe_voice(bytes(voice_bytes))
+    if not text:
+        await update.message.reply_text("🙏 Awaaz samajh nahi aaya. Thoda seedha bolein ya text likhein.")
+        return
+
+    # Step 3: Get AI reply (no echo — voice assistants respond, not repeat)
+    try:
+        await context.bot.send_chat_action(update.effective_chat.id, "typing")
+        reply, intent, language = chat(user.id, text)
+        await update.message.reply_text(reply)
+    except Exception as e:
+        print(f"Voice chat error: {e}")
+        await update.message.reply_text("🙏 Jawab dene mein dikkat hui. Thodi der baad try karein.")
+        return
+
+    # Step 4: Log (isolated — a DB error won't affect the user)
+    try:
+        log_query(user.id, "voice", text, reply, intent, language)
+    except Exception as e:
+        print(f"Voice log error (non-critical): {e}")
 
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
