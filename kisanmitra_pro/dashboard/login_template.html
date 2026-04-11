@@ -15,6 +15,9 @@
       --text: #ffffff;
       --text-muted: #a1b0a6;
     }
+    html {
+      scroll-snap-type: y mandatory;
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: 'Outfit', sans-serif;
@@ -168,8 +171,13 @@
     /* Scroll Track - Makes the page scrollable */
     #scroll-track {
       position: relative;
-      height: 600vh; /* 6 times viewport height to scrub through frames */
       z-index: 10;
+    }
+    .snap-section {
+      height: 100vh;
+      width: 100%;
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
     }
 
     /* Cinematic Scenes container overlays */
@@ -207,7 +215,7 @@
     }
 
     /* Tiers Section */
-    .tiers-section { padding: 100px 10%; text-align: center; }
+    .tiers-section { padding: 100px 10%; text-align: center; scroll-snap-align: start; }
     .tiers-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; align-items: end; margin-top: 60px; max-width: 1200px; margin-left: auto; margin-right: auto;}
     .tier-card {
       background: rgba(20,30,24,0.5); padding: 40px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.05); 
@@ -222,7 +230,7 @@
     .tier-features li::before { content: '✓'; color: var(--primary); font-weight: bold; }
 
     /* Footer CTA */
-    .cta-section { background: linear-gradient(0deg, #050806 0%, #064e3b 100%); align-items: center; text-align: center; padding: 120px 10%; border-top: 1px solid rgba(74,222,128,0.1);}
+    .cta-section { background: linear-gradient(0deg, #050806 0%, #064e3b 100%); align-items: center; text-align: center; padding: 120px 10%; border-top: 1px solid rgba(74,222,128,0.1); scroll-snap-align: start; }
     .google-login-btn {
       display: inline-flex; align-items: center; gap: 15px; background: #ffffff; color: #000;
       padding: 16px 40px; border-radius: 40px; font-size: 1.2rem; font-weight: 600; text-decoration: none; 
@@ -237,7 +245,6 @@
       h1 { font-size: 3.5rem; }
       .layer-title { font-size: 2.5rem; }
       .tiers-grid { grid-template-columns: 1fr; align-items: stretch; }
-      #scroll-track { height: 800vh; }
       .pipeline-track { flex-direction: column; align-items: center; gap: 0; }
       .pipe-arrow { transform: rotate(90deg); width: 50px; height: 80px; }
     }
@@ -247,6 +254,7 @@
       padding: 120px 6% 80px;
       background: linear-gradient(180deg, #050806 0%, rgba(6,28,16,0.6) 50%, #050806 100%);
       position: relative; overflow: hidden;
+      scroll-snap-align: start;
     }
     .pipeline-section::before {
       content: ''; position: absolute; inset: 0; pointer-events: none;
@@ -386,6 +394,7 @@
       padding: 80px 6% 100px;
       background: #050806;
       display: flex; justify-content: center;
+      scroll-snap-align: start;
     }
     .tg-card {
       position: relative; overflow: hidden;
@@ -530,6 +539,7 @@
       padding: 120px 8% 100px;
       background: #050806;
       position: relative; overflow: hidden;
+      scroll-snap-align: start;
     }
     .about-section::before {
       content: ''; position: absolute; inset: 0; pointer-events: none;
@@ -786,6 +796,10 @@
 
   <!-- Tall Scroll Track to drive the animation -->
   <div id="scroll-track">
+    <div class="snap-section"></div>
+    <div class="snap-section"></div>
+    <div class="snap-section"></div>
+    <div class="snap-section"></div>
     
     <!-- Scene 0: Hero -->
     <div class="scene" id="scene-0">
