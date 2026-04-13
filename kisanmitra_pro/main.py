@@ -24,13 +24,19 @@ from services.schemes import get_crop_calendar
 from handlers.commands import (
     start, help_cmd, weather_cmd, calendar_cmd,
     mandi_cmd, schemes_cmd, satellite_cmd, alerts_cmd, setlocation_cmd,
-    myfield_cmd, linkemail_cmd
+    myfield_cmd, linkemail_cmd, soilcard_cmd
 )
 from handlers.messages import handle_text, handle_voice, handle_photo, handle_location
 from handlers.callbacks import handle_callback
 from handlers.soil_conversation import soil_conversation_handler
 
-groq_client = Groq(api_key=GROQ_API_KEY)
+
+_groq_client = None
+def _get_groq():
+    global _groq_client
+    if _groq_client is None:
+        _groq_client = Groq(api_key=GROQ_API_KEY)
+    return _groq_client
 
 
 # === DAILY MORNING ALERT ===
@@ -44,7 +50,7 @@ async def send_morning_alerts(app):
             uid = farmer["user_id"]
             w = get_weather(farmer["lat"], farmer["lon"], farmer["location"])
 
-            tip_res = groq_client.chat.completions.create(
+            tip_res = _get_groq().chat.completions.create(
                 model=GROQ_CHAT_MODEL,
                 messages=[{"role": "user", "content": f"""One practical farming tip for today.
 Season: March, Rabi harvest, Maharashtra.
@@ -97,6 +103,10 @@ def print_banner():
 ║  ✅ SQLite data pipeline                     ║
 ║  ✅ Analytics dashboard                      ║
 ║  ✅ Community pest outbreak map              ║
+║  🆕 XGBoost fertilizer model (99%+ acc)     ║
+║  🆕 AgroMonitoring satellite NDVI           ║
+║  🆕 Plantix/Vision diagnosis (+ fallback)   ║
+║  🆕 Hybrid Soil Fusion → GoI Health Card    ║
 ╠══════════════════════════════════════════════╣
 ║  Stats: {stats['total_farmers']} farmers | {stats['total_queries']} queries | {stats['total_pest_reports']} reports
 ╚══════════════════════════════════════════════╝
@@ -124,6 +134,7 @@ async def main():
     app.add_handler(CommandHandler("setlocation", setlocation_cmd))
     app.add_handler(CommandHandler("myfield", myfield_cmd))
     app.add_handler(CommandHandler("linkemail", linkemail_cmd))
+    app.add_handler(CommandHandler("soilcard", soilcard_cmd))
 
     # Soil ConversationHandler (must be before generic message handler)
     app.add_handler(soil_conversation_handler)

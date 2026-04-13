@@ -25,6 +25,11 @@ DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "kisanmitra.d
 # === GOVT API ===
 MANDI_API_KEY = os.environ.get("MANDI_API_KEY", "")
 
+# === SOIL RESTORATION APIs ===
+AGROMONITORING_API_KEY = os.environ.get("AGROMONITORING_API_KEY", "")
+PLANTIX_API_KEY        = os.environ.get("PLANTIX_API_KEY", "")
+PLANTIX_ENABLED        = bool(os.environ.get("PLANTIX_API_KEY", ""))
+
 # === APP SETTINGS ===
 MAX_HISTORY = 8
 MORNING_ALERT_HOUR = 7

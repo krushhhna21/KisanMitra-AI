@@ -5,6 +5,7 @@ from services.weather import get_weather
 from services.schemes import get_crop_calendar, find_schemes
 from services.mandi import get_mandi_prices
 from services.satellite import get_crop_health
+from services.soil_fusion import generate_quick_soil_card
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -170,4 +171,71 @@ async def linkemail_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     update_farmer_email(user_id, email)
     
     await update.effective_message.reply_text(f"✅ Aapka account `{email}` se link ho gaya hai!\nAb aap /myfield check kar sakte hain.", parse_mode="Markdown")
+
+
+async def soilcard_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Show GoI Soil Health Card with latest report + live satellite data."""
+    user_id = update.effective_user.id
+    farmer = get_farmer(user_id)
+    email = farmer.get("email", "")
+    lang = farmer.get("language", "hi") or "hi"
+
+    # Get latest soil report
+    reports = get_soil_reports(email=email, limit=1) if email else get_soil_reports(user_id=user_id, limit=1)
+
+    if not reports:
+        if lang == "mr":
+            msg = "🧪 *कोणताही माती अहवाल नाही!*\n\n/soilstart — माती चाचणी विझार्ड सुरू करा"
+        elif lang == "en":
+            msg = "🧪 *No soil report found!*\n\n/soilstart — Start soil test wizard"
+        else:
+            msg = "🧪 *Koi soil report nahi!*\n\n/soilstart — Soil test wizard shuru karein"
+        await update.effective_message.reply_text(msg, parse_mode="Markdown")
+        return
+
+    r = reports[0]
+    lat = farmer.get("lat", 18.4088)
+    lon = farmer.get("lon", 76.5604)
+    location = farmer.get("location", "Maharashtra")
+    farmer_name = update.effective_user.first_name or "Kisan"
+
+    await context.bot.send_chat_action(update.effective_chat.id, "typing")
+
+    if lang == "mr":
+        await update.effective_message.reply_text("🛰️ सॅटेलाईट डेटा + AI विश्लेषण चालू... ⏳")
+    elif lang == "en":
+        await update.effective_message.reply_text("🛰️ Fetching satellite data + AI analysis... ⏳")
+    else:
+        await update.effective_message.reply_text("🛰️ Satellite data + AI analysis ho raha hai... ⏳")
+
+    try:
+        card = generate_quick_soil_card(
+            n=float(r.get('nitrogen_kg_ha', 0)),
+            p=float(r.get('phosphorus_kg_ha', 0)),
+            k=float(r.get('potassium_kg_ha', 0)),
+            ph=float(r.get('ph', 7.0)),
+            moisture=float(r.get('moisture_pct', 40)),
+            ec=float(r.get('ec_ds_m', 0.5)),
+            lat=lat, lon=lon, location=location,
+            farmer_name=farmer_name,
+            language=lang,
+        )
+
+        # Split if too long for Telegram
+        if len(card) <= 4096:
+            await update.effective_message.reply_text(card, parse_mode="Markdown")
+        else:
+            mid = len(card) // 2
+            await update.effective_message.reply_text(card[:mid])
+            await update.effective_message.reply_text(card[mid:], parse_mode="Markdown")
+
+    except Exception as e:
+        print(f"Soilcard error: {e}")
+        if lang == "mr":
+            msg = "⚠️ Soil card तयार करताना अडचण. /soilstart वापरून नवीन report तयार करा."
+        elif lang == "en":
+            msg = "⚠️ Error generating soil card. Use /soilstart to create a new report."
+        else:
+            msg = "⚠️ Soil card banane mein dikkat. /soilstart se naya report banayein."
+        await update.effective_message.reply_text(msg)
 

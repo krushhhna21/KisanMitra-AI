@@ -7,9 +7,10 @@ from agents.vision_agent import analyze_crop_photo
 from agents.voice_agent import transcribe_voice
 from services.mandi import get_mandi_prices
 from services.schemes import find_schemes
+from services.plantix import analyze_plant_health
 from database.db import (
     log_query, upsert_farmer, update_farmer_location, add_pest_report, get_farmer,
-    check_pest_outbreak, get_alert_users_by_location
+    check_pest_outbreak, get_alert_users_by_location, get_soil_reports
 )
 
 MANDI_KEYWORDS = ["bhav", "price", "rate", "mandi", "bazar", "pyaaz", "tamatar",
@@ -83,6 +84,7 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     farmer = get_farmer(user.id)
+    lang = farmer.get("language", "hi") or "hi"
 
     await context.bot.send_chat_action(update.effective_chat.id, "typing")
     await update.message.reply_text("📸 Photo mil gayi! Analysis ho raha hai... 🔍\n_(15-20 seconds)_", parse_mode="Markdown")
@@ -92,8 +94,37 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         photo_file = await context.bot.get_file(photo.file_id)
         image_bytes = await photo_file.download_as_bytearray()
 
+        # Primary analysis via existing vision agent (for display + pest logging)
         analysis, crop_detected, pest_detected = analyze_crop_photo(bytes(image_bytes))
         log_query(user.id, "photo", f"photo:{crop_detected}", analysis, "pest")
+
+        # ── Enrichment: If farmer has soil data, add Plantix structured insights ─
+        email = farmer.get("email", "")
+        soil_reports = get_soil_reports(email=email, limit=1) if email else get_soil_reports(user_id=user.id, limit=1)
+
+        if soil_reports:
+            try:
+                # Get structured diagnosis from Plantix/Groq Vision
+                plantix_result = analyze_plant_health(bytes(image_bytes), language=lang)
+                r = soil_reports[0]
+
+                enrichment = []
+                if plantix_result.get("disease", "None") != "None":
+                    enrichment.append(f"\n🔬 *Detailed Diagnosis:* {plantix_result['disease']} ({plantix_result['severity']})")
+                    enrichment.append(f"💊 *Treatment:* {plantix_result['treatment']}")
+                if plantix_result.get("deficiency", "None") != "None":
+                    enrichment.append(f"🧪 *Nutrient Deficiency:* {plantix_result['deficiency']}")
+
+                enrichment.append(
+                    f"\n📊 *Your Soil Data:* pH={r.get('ph','-')} | "
+                    f"N={r.get('nitrogen_kg_ha','-')} | P={r.get('phosphorus_kg_ha','-')} | K={r.get('potassium_kg_ha','-')}"
+                )
+                enrichment.append(f"_Source: {plantix_result.get('source', 'AI Vision')}_")
+
+                if enrichment:
+                    analysis += "\n" + "\n".join(enrichment)
+            except Exception as enrich_err:
+                print(f"Photo enrichment error (non-critical): {enrich_err}")
 
         # Auto-log pest report if pest detected
         if pest_detected and pest_detected not in ["none", "unknown", ""]:

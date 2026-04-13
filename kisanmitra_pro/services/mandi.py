@@ -3,7 +3,12 @@ from groq import Groq
 from config import GROQ_API_KEY, GROQ_CHAT_MODEL, MANDI_API_KEY
 from database.db import get_conn
 
-groq_client = Groq(api_key=GROQ_API_KEY)
+_groq_client = None
+def _get_groq():
+    global _groq_client
+    if _groq_client is None:
+        _groq_client = Groq(api_key=GROQ_API_KEY)
+    return _groq_client
 
 CROP_MAP = {
     "pyaaz": "Onion", "onion": "Onion", "kanda": "Onion",
@@ -63,7 +68,7 @@ def get_mandi_prices(crop_query: str) -> str:
 
 def _ai_price_fallback(crop_query: str) -> str:
     try:
-        res = groq_client.chat.completions.create(
+        res = _get_groq().chat.completions.create(
             model=GROQ_CHAT_MODEL,
             messages=[{"role": "user", "content": f"""Indian farmer asking mandi price: {crop_query}
 Give approximate current Maharashtra mandi price range (₹/quintal).

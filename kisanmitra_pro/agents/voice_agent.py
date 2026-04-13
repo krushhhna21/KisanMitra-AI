@@ -3,7 +3,12 @@ import traceback
 from groq import Groq
 from config import GROQ_API_KEY, GROQ_WHISPER_MODEL
 
-groq_client = Groq(api_key=GROQ_API_KEY)
+_groq_client = None
+def _get_groq():
+    global _groq_client
+    if _groq_client is None:
+        _groq_client = Groq(api_key=GROQ_API_KEY)
+    return _groq_client
 
 # Fallback model if primary Whisper model is unavailable on the free tier
 WHISPER_FALLBACK_MODEL = "whisper-large-v3-turbo"
@@ -58,7 +63,7 @@ def _call_whisper(file_path: str, model: str) -> str | None:
     """
     try:
         with open(file_path, "rb") as f:
-            result = groq_client.audio.transcriptions.create(
+            result = _get_groq().audio.transcriptions.create(
                 model=model,
                 file=(os.path.basename(file_path), f, "audio/ogg"),
                 language="hi",           # Primary = Hindi; Whisper auto-detects if wrong

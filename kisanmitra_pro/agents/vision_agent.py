@@ -2,7 +2,12 @@ import base64
 from groq import Groq
 from config import GROQ_API_KEY, GROQ_VISION_MODEL, GROQ_CHAT_MODEL
 
-groq_client = Groq(api_key=GROQ_API_KEY)
+_groq_client = None
+def _get_groq():
+    global _groq_client
+    if _groq_client is None:
+        _groq_client = Groq(api_key=GROQ_API_KEY)
+    return _groq_client
 
 def analyze_crop_photo(image_bytes: bytes) -> tuple:
     """
@@ -12,7 +17,7 @@ def analyze_crop_photo(image_bytes: bytes) -> tuple:
     try:
         image_b64 = base64.b64encode(image_bytes).decode("utf-8")
 
-        response = groq_client.chat.completions.create(
+        response = _get_groq().chat.completions.create(
             model=GROQ_VISION_MODEL,
             messages=[{
                 "role": "user",
@@ -72,7 +77,7 @@ If not a plant image, say: "Kripya fasal ki photo bhejein." """
         print(f"Vision agent error: {e}")
         # Fallback
         try:
-            res = groq_client.chat.completions.create(
+            res = _get_groq().chat.completions.create(
                 model=GROQ_CHAT_MODEL,
                 messages=[{"role": "user", "content": "Farmer ne fasal photo bheji. Unhe text mein symptoms batane ko bolein. Hindi mein, 2 lines."}],
                 max_tokens=100

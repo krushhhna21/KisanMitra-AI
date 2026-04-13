@@ -3,7 +3,12 @@ from config import GROQ_API_KEY, GROQ_CHAT_MODEL, MAX_HISTORY
 from services.weather import get_weather
 from database.db import get_farmer, update_farmer_language, get_land_details, get_soil_reports, get_recent_queries
 
-groq_client = Groq(api_key=GROQ_API_KEY)
+_groq_client = None
+def _get_groq():
+    global _groq_client
+    if _groq_client is None:
+        _groq_client = Groq(api_key=GROQ_API_KEY)
+    return _groq_client
 
 def get_history(user_id: int) -> list:
     """Fetch chat history directly from the database to retain context across sessions."""
@@ -127,7 +132,7 @@ Requirements:
                 {"role": "user", "content": f"Alert! Outbreak of {pest} on {crop} in {location}. Generate advisory."}]
     
     try:
-        res = groq_client.chat.completions.create(
+        res = _get_groq().chat.completions.create(
             model=GROQ_CHAT_MODEL,
             messages=messages,
             max_tokens=400,
@@ -184,7 +189,7 @@ Live weather for {location}:
     messages = [{"role": "system", "content": system_prompt}] + get_history(user_id) + [{"role": "user", "content": message}]
 
     try:
-        res = groq_client.chat.completions.create(
+        res = _get_groq().chat.completions.create(
             model=GROQ_CHAT_MODEL,
             messages=messages,
             max_tokens=500,
