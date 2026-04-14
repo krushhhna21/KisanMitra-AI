@@ -105,19 +105,62 @@ def generate_quick_soil_card(
     Quick card (no photo) — for /soilcard command.
     Uses XGBoost + Satellite only.
     Returns formatted text ready for Telegram.
+    Includes comprehensive fallbacks to ensure response.
     """
-    xgboost_result = get_fertilizer_recommendation(n, p, k, ph, moisture, ec)
-    satellite_result = get_satellite_summary(lat, lon, location)
+    try:
+        xgboost_result = get_fertilizer_recommendation(n, p, k, ph, moisture, ec)
+    except Exception as e:
+        print(f"[soil_fusion] XGBoost error: {e}, using fallback")
+        xgboost_result = {
+            "urea_kg_ha": max(0, 250 - n) / 0.46,
+            "dap_kg_ha": max(0, 25 - p) / 0.46,
+            "mop_kg_ha": max(0, 150 - k) / 0.60,
+            "lime_kg_ha": 0,
+            "gypsum_kg_ha": 0,
+            "soil_health_grade": "C — Average 🟠",
+            "score": 50,
+            "restoration_steps": ["Apply balanced fertilizers", "Monitor soil moisture"],
+            "model_used": "Emergency Fallback",
+        }
+    
+    try:
+        satellite_result = get_satellite_summary(lat, lon, location)
+    except Exception as e:
+        print(f"[soil_fusion] Satellite error: {e}, using fallback")
+        satellite_result = {
+            "ndvi": None,
+            "ndvi_status": "Data unavailable",
+            "ndvi_trend": "→ Stable",
+            "soil_moisture": moisture,
+            "soil_temp": None,
+            "data_source": "Local Data Only",
+            "raw_summary": f"📍 Field: {location}\n📊 Soil Moisture: {moisture}%",
+        }
 
-    card = _format_unified_card(
-        xgboost_result, satellite_result, None,
-        farmer_name, location
-    )
+    try:
+        card = _format_unified_card(
+            xgboost_result, satellite_result, None,
+            farmer_name, location
+        )
+    except Exception as e:
+        print(f"[soil_fusion] Format error: {e}, creating basic card")
+        card = f"""╔══════════════════════════════════════════╗
+║  🇮🇳  SOIL HEALTH CARD — KisanMitra AI   ║
+╠══════════════════════════════════════════╣
+║  Farmer : {farmer_name:<30} ║
+║  Location: {location:<29} ║
+╠══════════════════════════════════════════╣
+║  📊 EMERGENCY REPORT (errors occurred)   ║
+╚══════════════════════════════════════════╝"""
 
-    summary = _generate_ai_summary(
-        xgboost_result, satellite_result, None,
-        "", language
-    )
+    try:
+        summary = _generate_ai_summary(
+            xgboost_result, satellite_result, None,
+            "", language
+        )
+    except Exception as e:
+        print(f"[soil_fusion] AI summary error: {e}, using basic summary")
+        summary = "Soil analysis data collected. Check the card details above for fertilizer recommendations."
 
     return f"{card}\n\n💡 *AI Summary:*\n{summary}"
 
@@ -131,6 +174,12 @@ def _format_unified_card(
     """Format unified GoI Soil Health Card."""
 
     # Section 1: Sensor Data (from XGBoost input context)
+    # Add safety checks for missing data
+    if not xgb:
+        xgb = {"soil_health_grade": "N/A", "score": 0, "restoration_steps": []}
+    if not sat:
+        sat = {"ndvi": None, "ndvi_status": "N/A", "ndvi_trend": "→ Stable", "soil_moisture": None}
+    
     grade = xgb.get("soil_health_grade", "N/A")
     score = xgb.get("score", 0)
 
@@ -140,17 +189,17 @@ def _format_unified_card(
         vision_section = (
             f"╠══════════════════════════════════════════╣\n"
             f"║  🔬 VISUAL DIAGNOSIS                     ║\n"
-            f"║  Disease  : {vis['disease'][:28]:<28} ║\n"
-            f"║  Severity : {vis['severity']:<28} ║\n"
-            f"║  Confidence: {int(vis['confidence']*100)}%{' '*24}║\n"
-            f"║  💊 {vis['treatment'][:36]:<36} ║\n"
+            f"║  Disease  : {vis.get('disease', 'Unknown')[:28]:<28} ║\n"
+            f"║  Severity : {vis.get('severity', 'N/A'):<28} ║\n"
+            f"║  Confidence: {int(vis.get('confidence', 0)*100)}%{' '*24}║\n"
+            f"║  💊 {vis.get('treatment', 'N/A')[:36]:<36} ║\n"
         )
     elif vis and vis.get("deficiency", "None") != "None":
         vision_section = (
             f"╠══════════════════════════════════════════╣\n"
             f"║  🔬 VISUAL DIAGNOSIS                     ║\n"
-            f"║  Deficiency: {vis['deficiency'][:27]:<27} ║\n"
-            f"║  💊 {vis['treatment'][:36]:<36} ║\n"
+            f"║  Deficiency: {vis.get('deficiency', 'Unknown')[:27]:<27} ║\n"
+            f"║  💊 {vis.get('treatment', 'N/A')[:36]:<36} ║\n"
         )
     elif vis:
         vision_section = (

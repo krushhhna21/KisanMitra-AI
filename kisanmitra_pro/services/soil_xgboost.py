@@ -76,17 +76,30 @@ def _load_or_train() -> dict:
     if os.path.exists(MODEL_CACHE_PATH):
         try:
             with open(MODEL_CACHE_PATH, "rb") as f:
-                return pickle.load(f)
-        except Exception:
-            pass
+                models = pickle.load(f)
+                if models and isinstance(models, dict) and len(models) > 0:
+                    return models
+                else:
+                    print(f"[soil_xgboost] Cache corrupted/empty, retraining...")
+                    os.remove(MODEL_CACHE_PATH)
+        except Exception as e:
+            print(f"[soil_xgboost] Cache load error ({e}), retraining...")
+            try:
+                os.remove(MODEL_CACHE_PATH)
+            except:
+                pass
 
-    models = _train_models()
     try:
-        with open(MODEL_CACHE_PATH, "wb") as f:
-            pickle.dump(models, f)
-    except Exception:
-        pass
-    return models
+        models = _train_models()
+        try:
+            with open(MODEL_CACHE_PATH, "wb") as f:
+                pickle.dump(models, f)
+        except Exception as cache_err:
+            print(f"[soil_xgboost] Cache write failed ({cache_err}), continuing without cache")
+        return models
+    except Exception as train_err:
+        print(f"[soil_xgboost] Training failed ({train_err}), returning empty dict for fallback")
+        return {}
 
 
 # ─── Rule-based fallback (no XGBoost) ────────────────────────────────────────
@@ -144,19 +157,31 @@ def get_fertilizer_recommendation(
 
     # ── Run prediction ──────────────────────────────────────────────────────
     if XGB_AVAILABLE:
-        if not _models:
-            _models = _load_or_train()
-        inp = np.array([[n, p, k, ph, moisture, ec]], dtype=np.float32)
-        raw = {fert: float(max(0.0, model.predict(inp)[0]))
-               for fert, model in _models.items()}
-        result = {
-            "urea_kg_ha":   round(raw["urea"],   1),
-            "dap_kg_ha":    round(raw["dap"],     1),
-            "mop_kg_ha":    round(raw["mop"],     1),
-            "lime_kg_ha":   round(raw["lime"],    1),
-            "gypsum_kg_ha": round(raw["gypsum"],  1),
-            "model_used":   "XGBoost v2.1",
-        }
+        try:
+            if not _models:
+                _models = _load_or_train()
+            
+            # If models still empty, fall through to rule-based
+            if _models and len(_models) > 0:
+                inp = np.array([[n, p, k, ph, moisture, ec]], dtype=np.float32)
+                raw = {fert: float(max(0.0, model.predict(inp)[0]))
+                       for fert, model in _models.items()}
+                result = {
+                    "urea_kg_ha":   round(raw["urea"],   1),
+                    "dap_kg_ha":    round(raw["dap"],     1),
+                    "mop_kg_ha":    round(raw["mop"],     1),
+                    "lime_kg_ha":   round(raw["lime"],    1),
+                    "gypsum_kg_ha": round(raw["gypsum"],  1),
+                    "model_used":   "XGBoost v2.1",
+                }
+            else:
+                print("[soil_xgboost] Models unavailable, using rule-based fallback")
+                result = _rule_based_recommendation(n, p, k, ph, moisture, ec)
+                result["model_used"] = "Rule-Based (XGBoost fallback)"
+        except Exception as e:
+            print(f"[soil_xgboost] XGBoost prediction error ({e}), using fallback")
+            result = _rule_based_recommendation(n, p, k, ph, moisture, ec)
+            result["model_used"] = "Rule-Based (XGBoost error)"
     else:
         result = _rule_based_recommendation(n, p, k, ph, moisture, ec)
         result["model_used"] = "Rule-Based (XGBoost not installed)"
