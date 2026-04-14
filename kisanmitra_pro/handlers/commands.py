@@ -223,11 +223,11 @@ async def soilcard_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # Split if too long for Telegram
         if len(card) <= 4096:
-            await update.effective_message.reply_text(card, parse_mode="Markdown")
+            await update.effective_message.reply_text(f"<pre>{card}</pre>", parse_mode="HTML")
         else:
             mid = len(card) // 2
-            await update.effective_message.reply_text(card[:mid])
-            await update.effective_message.reply_text(card[mid:], parse_mode="Markdown")
+            await update.effective_message.reply_text(f"<pre>{card[:mid]}</pre>", parse_mode="HTML")
+            await update.effective_message.reply_text(f"<pre>{card[mid:]}</pre>", parse_mode="HTML")
 
     except Exception as e:
         print(f"Soilcard error: {e}")

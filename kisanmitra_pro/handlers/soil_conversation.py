@@ -312,11 +312,11 @@ async def _generate_final_report(update: Update, context: ContextTypes.DEFAULT_T
 
     # Telegram has 4096 char limit — split if needed
     if len(card) + len(ai_summary) + 30 <= 4096:
-        full_msg = f"```\n{card}\n```\n\n💡 *AI Summary:*\n{ai_summary}"
-        await update.message.reply_text(full_msg, parse_mode="Markdown")
+        full_msg = f"<pre>{card}</pre>\n\n💡 <b>AI Summary:</b>\n{ai_summary}"
+        await update.message.reply_text(full_msg, parse_mode="HTML")
     else:
-        await update.message.reply_text(f"```\n{card}\n```", parse_mode="Markdown")
-        await update.message.reply_text(f"💡 *AI Summary:*\n{ai_summary}", parse_mode="Markdown")
+        await update.message.reply_text(f"<pre>{card}</pre>", parse_mode="HTML")
+        await update.message.reply_text(f"💡 <b>AI Summary:</b>\n{ai_summary}", parse_mode="HTML")
 
     # Closing message
     close_msg = _lang_text(lang,
