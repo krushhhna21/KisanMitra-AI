@@ -47,14 +47,35 @@ def detect_intent(message: str) -> str:
     return "other"
 
 def detect_language(message: str) -> str:
-    """Detect Hindi vs Marathi vs English"""
-    marathi_words = ["माझ्या", "करा", "आहे", "काय", "कसे", "टाकावे", "आली", "झाली", "नाही"]
+    """Detect Hindi vs Marathi vs English with better accuracy"""
+    # Count script characters
+    marathi_chars = sum(1 for c in message if '\u0900' <= c <= '\u097F')  # Devanagari
+    english_chars = sum(1 for c in message if c.isalpha() and ord(c) < 128)  # ASCII letters
+    
+    # Specific Marathi indicators
+    marathi_words = ["माझ्या", "करा", "आहे", "काय", "कसे", "टाकावे", "आली", "झाली", "नाही", "एकर", "गव्ह"]
     if any(w in message for w in marathi_words):
         return "mr"
-    hindi_chars = sum(1 for c in message if '\u0900' <= c <= '\u097F')
-    if hindi_chars > 3:
+    
+    # If Marathi script detected and is significant
+    if marathi_chars > len(message) * 0.3:  # >30% Marathi characters
+        return "mr"
+    
+    # If Hindi script detected and is significant
+    if marathi_chars > 3 and marathi_chars <= len(message) * 0.3:  # Devanagari but not majority Marathi
         return "hi"
-    return "en"
+    
+    # If mostly English/ASCII
+    if english_chars > len(message) * 0.6:  # >60% English letters
+        return "en"
+    
+    # Default based on content
+    if marathi_chars > english_chars:
+        return "mr"
+    elif english_chars > 0:
+        return "en"
+    else:
+        return "hi"
 
 
 def _build_farmer_context(user_id: int, email: str = "") -> str:
@@ -170,8 +191,18 @@ def chat(user_id: int, message: str) -> tuple:
     crops_info     = f"\nFarmer ki fasalein: {', '.join(crops)}" if crops else ""
     farmer_context = _build_farmer_context(user_id, email=email)
 
+    # Language-specific instruction
+    lang_map = {
+        "en": "English",
+        "hi": "Hindi (use Devanagari script)",
+        "mr": "Marathi (use Devanagari script)"
+    }
+    lang_name = lang_map.get(language, "English")
+    
     system_prompt = f"""You are KisanMitra AI 🌾.
 Expert AI farming assistant for Indian farmers.
+
+🔴 **CRITICAL INSTRUCTION: You MUST respond ONLY in {lang_name}. Do NOT mix languages.**
 
 Follow these strict reasoning steps to generate your response:
 1. Check the farmer's registered land and crop details.
@@ -183,7 +214,8 @@ Format rules:
 - Keep it MINIMAL and direct to the point. NO lengthy paragraphs or fluff.
 - Use short bullet points.
 - Include emojis (🌾🚜🧪🐛💧) to make reading interesting.
-- Reply in the exact same language the farmer used.
+- Reply ONLY in {lang_name} - every single word must be in this language.
+- Never translate or use other languages.
 
 Farmer's Data Context:
 {crops_info}
