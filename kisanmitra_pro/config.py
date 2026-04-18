@@ -1,7 +1,12 @@
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
+try:
+    from dotenv import load_dotenv
+except Exception:
+    load_dotenv = None
+
+if load_dotenv is not None:
+    load_dotenv()
 
 # === API KEYS ===
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")

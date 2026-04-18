@@ -7,6 +7,7 @@ Dashboard: python dashboard/app.py
 Tests:     python -m pytest tests/ -v
 """
 import asyncio
+import os
 from keep_alive import keep_alive
 from datetime import datetime, timedelta
 from telegram import Update
@@ -29,6 +30,22 @@ from handlers.commands import (
 from handlers.messages import handle_text, handle_voice, handle_photo, handle_location
 from handlers.callbacks import handle_callback
 from handlers.soil_conversation import soil_conversation_handler
+
+
+# === VALIDATION ===
+def validate_config():
+    """Validate required environment variables at startup."""
+    required_keys = {
+        'GROQ_API_KEY': GROQ_API_KEY,
+        'TELEGRAM_BOT_TOKEN': TELEGRAM_BOT_TOKEN,
+    }
+    missing = [key for key, value in required_keys.items() if not value or value == ""]
+    if missing:
+        print(f"[FATAL] Missing required environment variables: {', '.join(missing)}")
+        print("[FATAL] Please set these in your .env file or system environment.")
+        import sys
+        sys.exit(1)
+    print("[OK] All required API keys configured.")
 
 
 _groq_client = None
@@ -115,8 +132,17 @@ def print_banner():
 
 # === MAIN ===
 async def main():
-    init_db()
-    print_banner()
+    # === Validate configuration first ===
+    validate_config()
+    
+    try:
+        init_db()
+    except Exception as e:
+        print(f"[WARN] DB init failed, continuing with degraded mode: {e}", flush=True)
+    try:
+        print_banner()
+    except Exception as e:
+        print(f"[WARN] Banner stats unavailable: {e}", flush=True)
 
     app = Application.builder().token(TELEGRAM_BOT_TOKEN).request(
         HTTPXRequest(connect_timeout=30.0, read_timeout=30.0, write_timeout=30.0)
@@ -151,7 +177,7 @@ async def main():
         asyncio.create_task(schedule_morning_alerts(application))
     app.post_init = post_init
 
-    print("✅ Bot is LIVE! Press Ctrl+C to stop.\n", flush=True)
+    print("[OK] Bot is LIVE! Press Ctrl+C to stop.\n", flush=True)
 
     # Initialize and start polling natively async
     await app.initialize()
@@ -160,7 +186,8 @@ async def main():
 
 
 if __name__ == "__main__":
-    keep_alive()   # 🌐 Only start keep-alive when running standalone
+    if os.environ.get("DISABLE_KEEP_ALIVE", "0") != "1":
+        keep_alive()   # 🌐 Only start keep-alive when running standalone
     
     # Run the async main func
     loop = asyncio.get_event_loop()

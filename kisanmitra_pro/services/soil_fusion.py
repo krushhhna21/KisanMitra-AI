@@ -14,15 +14,19 @@ from config import GROQ_API_KEY, GROQ_CHAT_MODEL
 from services.soil_xgboost import get_fertilizer_recommendation, format_soil_health_card
 from services.agromonitoring import get_satellite_summary
 from services.plantix import analyze_plant_health
+import threading
 
 # Lazy Groq client — initialized on first use to avoid httpx version conflicts
 _groq_client = None
+_groq_lock = threading.Lock()
 
 def _get_groq():
     global _groq_client
     if _groq_client is None:
-        from groq import Groq
-        _groq_client = Groq(api_key=GROQ_API_KEY)
+        with _groq_lock:
+            if _groq_client is None:
+                from groq import Groq
+                _groq_client = Groq(api_key=GROQ_API_KEY)
     return _groq_client
 
 

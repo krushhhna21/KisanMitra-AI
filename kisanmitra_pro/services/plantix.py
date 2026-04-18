@@ -9,15 +9,19 @@ Always returns a normalized dict for the fusion layer.
 import base64
 import requests
 from config import GROQ_API_KEY, GROQ_VISION_MODEL, PLANTIX_API_KEY, PLANTIX_ENABLED
+import threading
 
 # Lazy Groq client — initialized on first use to avoid httpx version conflicts at import
 _groq_client = None
+_groq_lock = threading.Lock()
 
 def _get_groq():
     global _groq_client
     if _groq_client is None:
-        from groq import Groq
-        _groq_client = Groq(api_key=GROQ_API_KEY)
+        with _groq_lock:
+            if _groq_client is None:
+                from groq import Groq
+                _groq_client = Groq(api_key=GROQ_API_KEY)
     return _groq_client
 
 # Plantix B2B API config
@@ -184,16 +188,21 @@ If not a plant/crop image, set DISEASE=None, DEFICIENCY=None, SEVERITY=low, CONF
                 except ValueError:
                     confidence = 0.7
 
-        # Extract treatment section
+        # Extract treatment section (safe split with index check)
         if "TREATMENT:" in full_text:
             parts = full_text.split("TREATMENT:")
             if len(parts) > 1:
-                treatment_block = parts[1].split("ANALYSIS:")[0] if "ANALYSIS:" in parts[1] else parts[1]
+                if "ANALYSIS:" in parts[1]:
+                    analysis_parts = parts[1].split("ANALYSIS:")
+                    treatment_block = analysis_parts[0] if len(analysis_parts) > 0 else parts[1]
+                else:
+                    treatment_block = parts[1]
                 treatment = treatment_block.strip()
 
-        # Extract analysis section for display
+        # Extract analysis section for display (safe split with index check)
         if "ANALYSIS:" in full_text:
-            analysis = full_text.split("ANALYSIS:")[1].strip()
+            analysis_sections = full_text.split("ANALYSIS:")
+            analysis = analysis_sections[1].strip() if len(analysis_sections) > 1 else full_text
 
         return {
             "disease": disease,

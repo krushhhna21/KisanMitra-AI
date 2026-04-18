@@ -2,12 +2,17 @@ import requests
 from groq import Groq
 from config import GROQ_API_KEY, GROQ_CHAT_MODEL, MANDI_API_KEY
 from database.db import get_conn
+import threading
 
 _groq_client = None
+_groq_lock = threading.Lock()
+
 def _get_groq():
     global _groq_client
     if _groq_client is None:
-        _groq_client = Groq(api_key=GROQ_API_KEY)
+        with _groq_lock:
+            if _groq_client is None:
+                _groq_client = Groq(api_key=GROQ_API_KEY)
     return _groq_client
 
 CROP_MAP = {
@@ -33,6 +38,7 @@ def get_mandi_prices(crop_query: str) -> str:
             break
 
     # Try govt API
+    conn = None
     try:
         url = "https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070"
         params = {
@@ -56,12 +62,18 @@ def get_mandi_prices(crop_query: str) -> str:
                     VALUES (?, ?, ?, ?)
                 """, (crop_name, r.get("Market", ""), float(r.get("Modal_Price", 0) or 0), r.get("Arrival_Date", "")))
             conn.commit()
-            conn.close()
 
             lines = [f"• {r.get('Market')} ({r.get('District')}): ₹{r.get('Modal_Price')}/quintal" for r in records]
             return f"💰 *{crop_name} — Maharashtra Mandi Bhav:*\n\n" + "\n".join(lines) + f"\n\n📅 _{records[0].get('Arrival_Date', 'Recent')}_\n_1 quintal = 100 kg_"
     except Exception as e:
         print(f"Mandi API error: {e}")
+    finally:
+        # Ensure connection is always closed, even on error
+        if conn:
+            try:
+                conn.close()
+            except Exception as close_err:
+                print(f"[WARN] DB connection close failed: {close_err}")
 
     # AI fallback
     return _ai_price_fallback(crop_query)

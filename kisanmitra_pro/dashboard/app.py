@@ -4,16 +4,25 @@ Google OAuth login + Land Details + Soil Report + Analytics
 Run: python server.py (from project root, where bot + dashboard run combined)
 Or standalone: cd kisanmitra_pro && python dashboard/app.py
 """
+import json
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from functools import wraps
+from urllib.parse import urlencode
+import urllib.request
 from flask import (
     Flask, redirect, url_for, session, request,
     render_template_string, jsonify, flash
 )
-from authlib.integrations.flask_client import OAuth
-from groq import Groq
+try:
+    from authlib.integrations.flask_client import OAuth
+except Exception:
+    OAuth = None
+try:
+    from groq import Groq
+except Exception:
+    Groq = None
 
 from config import (
     GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, FLASK_SECRET_KEY,
@@ -34,16 +43,29 @@ app.secret_key = FLASK_SECRET_KEY
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
 # ── Google OAuth ──────────────────────────────────────────────────────────────
-oauth = OAuth(app)
-google = oauth.register(
-    name="google",
-    client_id=GOOGLE_CLIENT_ID,
-    client_secret=GOOGLE_CLIENT_SECRET,
-    server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
-    client_kwargs={"scope": "openid email profile"},
-)
+oauth = OAuth(app) if OAuth is not None else None
+google = None
+if oauth is not None:
+    google = oauth.register(
+        name="google",
+        client_id=GOOGLE_CLIENT_ID,
+        client_secret=GOOGLE_CLIENT_SECRET,
+        server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+        client_kwargs={"scope": "openid email profile"},
+    )
 
-groq_client = Groq(api_key=GROQ_API_KEY)
+groq_client = None
+
+
+def get_groq_client():
+    global groq_client
+    if Groq is None:
+        raise RuntimeError("Groq SDK is not available in the current runtime.")
+    if groq_client is None:
+        # Delay client creation so dashboard startup does not fail
+        # when API key is temporarily missing/misconfigured.
+        groq_client = Groq(api_key=GROQ_API_KEY)
+    return groq_client
 
 # ── Auth helpers ──────────────────────────────────────────────────────────────
 def login_required(f):
@@ -83,7 +105,7 @@ Format: concise bullet points. Use simple language that can be understood by a v
 Max 300 words. Include emoji for each section."""
 
     try:
-        res = groq_client.chat.completions.create(
+        res = get_groq_client().chat.completions.create(
             model=GROQ_CHAT_MODEL,
             messages=[{"role": "user", "content": prompt}],
             max_tokens=600,
@@ -693,13 +715,56 @@ def login():
 @app.route("/auth/google")
 def auth_google():
     redirect_uri = url_for("auth_google_callback", _external=True)
+    if google is None:
+        params = {
+            "client_id": GOOGLE_CLIENT_ID,
+            "redirect_uri": redirect_uri,
+            "response_type": "code",
+            "scope": "openid email profile",
+            "access_type": "online",
+            "prompt": "select_account",
+        }
+        return redirect(f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}")
     return google.authorize_redirect(redirect_uri)
 
 @app.route("/auth/google/callback")
 def auth_google_callback():
     try:
-        token = google.authorize_access_token()
-        userinfo = token.get("userinfo") or google.userinfo()
+        if google is not None:
+            token = google.authorize_access_token()
+            userinfo = token.get("userinfo") or google.userinfo()
+        else:
+            code = request.args.get("code")
+            if not code:
+                raise RuntimeError("Missing OAuth authorization code.")
+            redirect_uri = url_for("auth_google_callback", _external=True)
+            token_payload = urlencode({
+                    "code": code,
+                    "client_id": GOOGLE_CLIENT_ID,
+                    "client_secret": GOOGLE_CLIENT_SECRET,
+                    "redirect_uri": redirect_uri,
+                    "grant_type": "authorization_code",
+                }).encode("utf-8")
+            token_req = urllib.request.Request(
+                "https://oauth2.googleapis.com/token",
+                data=token_payload,
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                method="POST",
+            )
+            with urllib.request.urlopen(token_req, timeout=20) as token_resp:
+                token_data = json.loads(token_resp.read().decode("utf-8"))
+
+            access_token = token_data.get("access_token", "")
+            if not access_token:
+                raise RuntimeError("Google token exchange failed.")
+            userinfo_req = urllib.request.Request(
+                "https://www.googleapis.com/oauth2/v3/userinfo",
+                headers={"Authorization": f"Bearer {access_token}"},
+                method="GET",
+            )
+            with urllib.request.urlopen(userinfo_req, timeout=20) as userinfo_resp:
+                userinfo = json.loads(userinfo_resp.read().decode("utf-8"))
+
         session["user"] = {
             "google_id": userinfo["sub"],
             "email":     userinfo["email"],
@@ -728,7 +793,9 @@ def dashboard():
     stats        = get_analytics()
     pest_reports = get_recent_pest_reports(10)
     user         = current_user()
-    farmer_name  = user.get("name", "Farmer").split()[0]
+    # Safe name parsing: handle empty or single-word names
+    name_parts = user.get("name", "Farmer").strip().split()
+    farmer_name  = name_parts[0] if name_parts else "Farmer"
     today_date   = __import__("datetime").date.today().strftime("%B %d, %Y")
     return render_template_string(
         DASHBOARD_HTML,

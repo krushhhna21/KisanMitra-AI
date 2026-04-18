@@ -2,12 +2,17 @@ from groq import Groq
 from config import GROQ_API_KEY, GROQ_CHAT_MODEL, MAX_HISTORY
 from services.weather import get_weather
 from database.db import get_farmer, update_farmer_language, get_land_details, get_soil_reports, get_recent_queries
+import threading
 
 _groq_client = None
+_groq_lock = threading.Lock()
+
 def _get_groq():
     global _groq_client
     if _groq_client is None:
-        _groq_client = Groq(api_key=GROQ_API_KEY)
+        with _groq_lock:
+            if _groq_client is None:
+                _groq_client = Groq(api_key=GROQ_API_KEY)
     return _groq_client
 
 def get_history(user_id: int) -> list:

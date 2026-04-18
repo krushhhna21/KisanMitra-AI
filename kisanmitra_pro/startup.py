@@ -1,50 +1,58 @@
 """
 Startup script for Azure App Service (WSGI Entry Point)
-Runs the Flask Dashboard application for Azure deployment.
-The Telegram bot (main.py) runs separately (locally or via worker role).
+=======================================================
+Runs ONLY the Flask Dashboard application for Azure deployment.
+The Telegram bot (main.py) must run separately via a WebJob or worker role
+to prevent Gunicorn timeouts and Port 8000 starvation on Azure!
+
+Startup command on Azure:
+  gunicorn --bind=0.0.0.0:8000 --workers=1 --threads=4 --timeout=120 startup:application
 """
+
 import sys
 import os
 import traceback
+from flask import Flask
 
-# Add project root to path
+# Add project root to path (since we are already in kisanmitra_pro)
 project_root = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, project_root)
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
-print(f"[startup] Python path: {sys.path[0]}")
-print(f"[startup] Current directory: {os.getcwd()}")
-print(f"[startup] Project root: {project_root}")
+# ── Import dashboard app safely so Gunicorn always gets a valid app ─────────
+application = None
 
-# Try to load the Flask app
 try:
-    print("[startup] Importing dashboard.app...")
     from dashboard.app import app as application
-    print("[startup] ✅ Flask app loaded successfully!")
-    
+    print("[startup] [OK] KisanMitra AI Flask Dashboard imported successfully!", flush=True)
 except Exception as e:
-    print(f"[startup] ❌ ERROR loading Flask app: {e}")
-    print(f"[startup] Error details:")
+    import_error = str(e)
+    print(f"[startup] [ERROR] Dashboard import failed: {e}", flush=True)
     traceback.print_exc()
-    
-    # Fallback minimal WSGI app that returns error details
-    def application(environ, start_response):
-        status = '500 Internal Server Error'
-        response_headers = [('Content-type', 'text/html; charset=utf-8')]
-        start_response(status, response_headers)
-        error_msg = f"""
-        <html><body>
-        <h1>500 - Server Error</h1>
-        <p>Failed to load KisanMitra Flask app</p>
-        <pre>{str(e)}</pre>
-        <p>Check Azure logs for details.</p>
-        </body></html>
-        """.encode('utf-8')
-        return [error_msg]
 
-print("[startup] Startup complete. WSGI app ready.")
+    # Keep container alive with a minimal fallback app.
+    application = Flask(__name__)
+
+    @application.route("/")
+    def fallback_index():
+        return f"KisanMitra dashboard fallback | import_error: {import_error}", 200
+
+# Initialize DB schemas safely (with fallback handled in database layer).
+try:
+    from database.db import init_db
+    init_db()
+    print("[startup] [OK] DB init complete", flush=True)
+except Exception as e:
+    # Non-fatal: app can still serve login/static routes while DB recovers.
+    print(f"[startup] [WARN] DB init skipped: {e}", flush=True)
+
+# Add a simple health check endpoint
+@application.route('/api/health')
+def health():
+    return {'status': 'ok', 'message': 'KisanMitra Dashboard is running!'}, 200
 
 if __name__ == "__main__":
     # Local development only (not used on Azure)
     port = int(os.environ.get("PORT", 8080))
-    print(f"[startup] Starting Flask app on localhost:{port}")
+    print(f"[startup] [OK] Starting Flask app on localhost:{port}")
     application.run(host="0.0.0.0", port=port, debug=False)

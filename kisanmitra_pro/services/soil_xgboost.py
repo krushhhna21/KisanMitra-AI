@@ -86,8 +86,8 @@ def _load_or_train() -> dict:
             print(f"[soil_xgboost] Cache load error ({e}), retraining...")
             try:
                 os.remove(MODEL_CACHE_PATH)
-            except:
-                pass
+            except (FileNotFoundError, OSError) as cleanup_err:
+                print(f"[soil_xgboost] Cache cleanup failed: {cleanup_err}")
 
     try:
         models = _train_models()

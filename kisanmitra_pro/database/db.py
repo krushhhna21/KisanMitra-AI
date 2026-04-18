@@ -13,11 +13,21 @@ except ImportError:
     psycopg2 = None
     RealDictCursor = None
     HAS_PSYCOPG2 = False
+_postgres_fallback_logged = False
 
 def get_conn():
+    global _postgres_fallback_logged
     if IS_POSTGRES and HAS_PSYCOPG2:
-        conn = psycopg2.connect(DATABASE_URL)
-        return conn
+        try:
+            # Keep startup responsive on Azure if DB is temporarily unreachable.
+            connect_timeout = int(os.environ.get("DB_CONNECT_TIMEOUT", "10"))
+            conn = psycopg2.connect(DATABASE_URL, connect_timeout=connect_timeout)
+            return conn
+        except Exception as e:
+            # Do not let transient external DB outages take down bot/dashboard.
+            if not _postgres_fallback_logged:
+                print(f"[db] [WARN] Postgres unavailable, switching to SQLite fallback: {e}", flush=True)
+                _postgres_fallback_logged = True
     
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -176,7 +186,7 @@ def init_db():
 
     conn.commit()
     conn.close()
-    print("✅ Database initialized.")
+    print("[OK] Database initialized.")
 
 
 # === FARMER OPERATIONS ===
@@ -211,7 +221,11 @@ def get_farmer(user_id: int) -> dict:
     conn.close()
     if row:
         d = serialize_row(row)
-        d["crops"] = json.loads(d.get("crops", "[]"))
+        try:
+            d["crops"] = json.loads(d.get("crops", "[]"))
+        except json.JSONDecodeError:
+            print(f"[WARN] Malformed crops JSON for user {user_id}, resetting to empty")
+            d["crops"] = []
         return d
     return {}
 
@@ -417,8 +431,9 @@ def get_analytics() -> dict:
         try:
             for crop in json.loads(row["crops"]):
                 crop_count[crop] = crop_count.get(crop, 0) + 1
-        except Exception:
-            pass
+        except (json.JSONDecodeError, TypeError, KeyError) as e:
+            print(f"[WARN] Error parsing crops JSON in analytics: {e}")
+            continue
 
     conn.close()
 

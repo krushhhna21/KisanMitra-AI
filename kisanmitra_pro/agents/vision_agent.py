@@ -1,12 +1,17 @@
 import base64
 from groq import Groq
 from config import GROQ_API_KEY, GROQ_VISION_MODEL, GROQ_CHAT_MODEL
+import threading
 
 _groq_client = None
+_groq_lock = threading.Lock()
+
 def _get_groq():
     global _groq_client
     if _groq_client is None:
-        _groq_client = Groq(api_key=GROQ_API_KEY)
+        with _groq_lock:
+            if _groq_client is None:
+                _groq_client = Groq(api_key=GROQ_API_KEY)
     return _groq_client
 
 def analyze_crop_photo(image_bytes: bytes) -> tuple:
@@ -65,9 +70,10 @@ If not a plant image, say: "Kripya fasal ki photo bhejein." """
             elif line.startswith("PEST:"):
                 pest_detected = line.replace("PEST:", "").strip().lower()
 
-        # Extract just the report part for display
+        # Extract just the report part for display (safe split with index check)
         if "REPORT:" in full_response:
-            display_text = "🔬 *Fasal Analysis Report*\n\n" + full_response.split("REPORT:")[1].strip()
+            report_parts = full_response.split("REPORT:")
+            display_text = "🔬 *Fasal Analysis Report*\n\n" + (report_parts[1].strip() if len(report_parts) > 1 else full_response)
         else:
             display_text = "🔬 *Fasal Analysis Report*\n\n" + full_response
 

@@ -1,0 +1,1 @@
+"""KisanMitra application package."""
