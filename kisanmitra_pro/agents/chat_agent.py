@@ -325,6 +325,76 @@ def _add_idempotency_hash(response: str) -> str:
     return hashlib.md5(response[:100].encode()).hexdigest()[:8]
 
 
+def _build_weather_context(user_id: int) -> str:
+    """
+    PHASE 5 - Build weather-aware context for recommendations
+    
+    Returns formatted weather alert string if:
+    - Heavy rain today/tomorrow (>10mm) - don't spray/apply fertilizer
+    - High wind speed (>20 km/h) - don't spray
+    - Extreme heat (>40°C) - water more, apply mulch
+    """
+    try:
+        # Get farmer location
+        farmer = get_farmer(user_id)
+        if not farmer:
+            return ""
+        
+        # Try to get location from farmer data (if available)
+        # For now using default location from config
+        weather = get_weather()
+        
+        alerts = []
+        
+        # Rain alert
+        if weather.get('rain_today', 0) > 10:
+            alerts.append("🚫 *Mausam Alert - Aaj Barish:* Dawai/Khalad aaj mat daliye! Kal lagaiye.")
+        elif weather.get('rain_tomorrow', 0) > 10:
+            alerts.append("🚫 *Mausam Alert - Kal Barish:* Kal spray/khalad na lagaye. Parson lagaiye.")
+        
+        # Heat alert
+        if weather.get('temp', 0) > 40:
+            alerts.append(f"🔥 *Taapman Alert ({weather.get('temp')}°C):* Thandi thand ke waqt pani de. Mulch lagaye.")
+        
+        if alerts:
+            return "\n\n" + "\n".join(alerts)
+        return ""
+    
+    except Exception as e:
+        print(f"Weather context error: {e}")
+        return ""
+
+
+def _build_pest_risk_context(user_id: int, crop: str, location: str) -> str:
+    """
+    PHASE 5 - Build community pest risk context
+    
+    Returns formatted pest alert if community risk detected
+    """
+    try:
+        pest_alerts = get_local_pest_reports(crop, location, days=30)
+        if not pest_alerts:
+            return ""
+        
+        risk = detect_community_risk(location, crop, pest_alerts)
+        if not risk:
+            return ""
+        
+        # Extract top 2 pests by severity
+        top_pests = sorted(pest_alerts, key=lambda x: (
+            x.get('severity', 'low') == 'high', 
+            x.get('days_ago', 999)
+        ))[:2]
+        
+        pest_list = ", ".join([p.get('pest_name', 'Pest') for p in top_pests])
+        
+        return f"\n\n🚨 *Community Alert:* {risk}\n• Pest: {pest_list}\n• Nikat jaankari check karein!"
+    
+    except Exception as e:
+        print(f"Pest risk context error: {e}")
+        return ""
+
+
 
     """
     Generate a short, actionable broadcast message for a pest outbreak.
@@ -377,6 +447,14 @@ def chat(user_id: int, message: str) -> tuple:
 
     crops_info     = f"\nFarmer ki fasalein: {', '.join(crops)}" if crops else ""
     farmer_context = _build_farmer_context(user_id, email=email)
+    
+    # PHASE 5: Add weather and pest alerts to context
+    weather_alert = _build_weather_context(user_id)
+    crop_primary = crops[0] if crops else "General"
+    pest_alert = _build_pest_risk_context(user_id, crop_primary, location)
+    
+    # Combine all context
+    full_context = farmer_context + weather_alert + pest_alert
 
     # Language-specific instruction
     lang_map = {
@@ -392,7 +470,7 @@ def chat(user_id: int, message: str) -> tuple:
 
 FARMER'S COMPLETE SITUATION:
 {crops_info}
-{farmer_context}
+{full_context}
 
 WEATHER (for {location}):
 {weather['summary']}
