@@ -1,7 +1,13 @@
 from groq import Groq
 from config import GROQ_API_KEY, GROQ_CHAT_MODEL, MAX_HISTORY
 from services.weather import get_weather
-from database.db import get_farmer, update_farmer_language, get_land_details, get_soil_reports, get_recent_queries, get_latest_sensor_data
+from database.db import (
+    get_farmer, update_farmer_language, get_land_details, get_soil_reports, 
+    get_recent_queries, get_latest_sensor_data, get_farmer_intelligence,
+    get_soil_history, get_sensor_history, analyze_soil_trend, 
+    analyze_sensor_trend, detect_community_risk, get_local_pest_reports,
+    analyze_fertilizer_log
+)
 import threading
 
 _groq_client = None
@@ -80,95 +86,196 @@ def detect_language(message: str) -> str:
 
 def _build_farmer_context(user_id: int, email: str = "") -> str:
     """
-    Build a rich farmer-profile context block from land details and soil reports.
-    This is injected into the system prompt so the AI gives fully personalised answers.
+    PHASE 2 IMPLEMENTATION - Comprehensive Farmer Context Builder
+    
+    Uses Farmer Intelligence Engine to fetch ALL available data:
+    - Soil trends (not just latest report)
+    - Sensor trends (not just latest reading)
+    - Pest alerts (community risk)
+    - Fertilizer history
+    - Estimated crop stage
+    
+    Returns formatted context string for system prompt
     """
     lines = []
 
-    # --- Land parcels ---
+    # Get comprehensive farmer intelligence
+    try:
+        intelligence = get_farmer_intelligence(user_id, email)
+    except Exception as e:
+        print(f"[WARN] Error fetching farmer intelligence: {e}")
+        return _build_farmer_context_fallback(user_id, email)
+
+    farmer = intelligence.get('farmer', {})
+    lands = intelligence.get('lands', [])
+    soil_history = intelligence.get('soil_history', [])
+    sensor_history = intelligence.get('sensor_history', [])
+    pest_alerts = intelligence.get('pest_alerts', [])
+    fertilizer_log = intelligence.get('fertilizer_log', {})
+
+    # --- Farmer Summary ---
+    lines.append(f"\n🌾 FARMER: {farmer.get('name', 'Unknown')} ({farmer.get('username', '')})")
+    lines.append(f"  Location: {farmer.get('location', 'Not set')}")
+    lines.append(f"  Crops registered: {', '.join(farmer.get('crops', []) or ['Not specified'])}")
+
+    # --- Land Details ---
+    if lands:
+        lines.append("\n🏞️  REGISTERED FIELDS:")
+        for i, land in enumerate(lands[:3], 1):
+            area = land.get('area_acres', '?')
+            crop = land.get('crop_type', '?')
+            soil_type = land.get('soil_type', '?')
+            district = land.get('district', '?')
+            
+            # Estimate crop stage based on soil report dates
+            crop_stage = _estimate_crop_stage(crop, soil_history)
+            
+            lines.append(
+                f"  Field {i}: {area} acres | Crop: {crop} ({crop_stage}) | "
+                f"Soil: {soil_type} | {district}"
+            )
+
+    # --- Soil Analysis ---
+    if soil_history:
+        latest_soil = soil_history[0]
+        lines.append("\n🧪 SOIL STATUS (Lab Analysis):")
+        
+        ph = latest_soil.get('ph', 0)
+        n = latest_soil.get('nitrogen_kg_ha', 0)
+        p = latest_soil.get('phosphorus_kg_ha', 0)
+        k = latest_soil.get('potassium_kg_ha', 0)
+        
+        lines.append(
+            f"  Latest: pH={ph} | N={n} kg/ha | P={p} kg/ha | K={k} kg/ha"
+        )
+        
+        # Soil trend
+        soil_trend = analyze_soil_trend(soil_history)
+        lines.append(f"  Trend: {soil_trend}")
+        
+        # Soil recommendations
+        soil_alerts = []
+        if ph < 5.5:
+            soil_alerts.append("🔴 Acidic soil - needs lime")
+        elif ph > 8.0:
+            soil_alerts.append("🔴 Alkaline soil - needs gypsum")
+        if n < 150:
+            soil_alerts.append("🟡 Low N - apply urea/DAP")
+        if p < 10:
+            soil_alerts.append("🟡 Low P - apply SSP")
+        if k < 100:
+            soil_alerts.append("🟡 Low K - apply MOP")
+        
+        if soil_alerts:
+            lines.append("  Actions: " + " | ".join(soil_alerts))
+
+    # --- Sensor Data (Real-time) ---
+    if sensor_history:
+        latest_sensor = sensor_history[0]
+        lines.append("\n📡 REAL-TIME SENSOR DATA:")
+        
+        moisture = latest_sensor.get('moisture', 0)
+        temp = latest_sensor.get('temperature', 0)
+        hours_ago = latest_sensor.get('hours_ago', 0)
+        
+        lines.append(
+            f"  Latest ({hours_ago}h ago): Moisture={moisture}% | Temp={temp}°C | "
+            f"pH={latest_sensor.get('ph', '?')}"
+        )
+        
+        # Sensor trend
+        sensor_trend = analyze_sensor_trend(sensor_history)
+        lines.append(f"  Trend: {sensor_trend}")
+        
+        # Sensor alerts
+        if latest_sensor.get('alerts'):
+            for alert in latest_sensor['alerts']:
+                lines.append(f"  ⚠️  {alert}")
+
+    # --- Community Pest Risk ---
+    if pest_alerts:
+        risk_assessment = detect_community_risk(
+            farmer.get('location', ''),
+            farmer.get('crops', [''])[0] if farmer.get('crops') else '',
+            pest_alerts
+        )
+        if risk_assessment:
+            lines.append(f"\n🐛 PEST ALERT: {risk_assessment}")
+            
+            # List recent pests
+            recent_pests = pest_alerts[:3]
+            for pest in recent_pests:
+                days = _calculate_days_ago_from_dict(pest)
+                lines.append(f"  - {pest.get('pest', '?')} on {pest.get('crop', '?')} ({days}d ago in {pest.get('location', '?')})")
+
+    # --- Fertilizer History ---
+    if fertilizer_log and fertilizer_log.get('total_applications', 0) > 0:
+        lines.append(f"\n📋 FERTILIZER HISTORY:")
+        lines.append(f"  Recent applications: {fertilizer_log.get('total_applications', 0)}")
+        if fertilizer_log.get('common_fertilizers'):
+            ferts = fertilizer_log['common_fertilizers']
+            top_ferts = sorted(ferts.items(), key=lambda x: x[1], reverse=True)[:3]
+            lines.append(f"  Common: {', '.join([f'{f[0]} ({f[1]}x)' for f in top_ferts])}")
+
+    return "\n".join(lines) if lines else ""
+
+
+def _build_farmer_context_fallback(user_id: int, email: str = "") -> str:
+    """
+    Fallback context builder if intelligence engine fails
+    Uses original simpler approach
+    """
+    lines = []
     lands = get_land_details(email=email) if email else get_land_details(user_id=user_id)
     if lands:
-        lines.append("\n🌾 FARMER'S REGISTERED FIELDS:")
+        lines.append("\n🌾 FARMER'S FIELDS:")
         for i, land in enumerate(lands[:3], 1):
             lines.append(
                 f"  Field {i}: {land.get('area_acres', '?')} acres | "
                 f"Crop: {land.get('crop_type', '?')} | "
-                f"Soil type: {land.get('soil_type', '?')} | "
-                f"Village: {land.get('village', '?')}, {land.get('district', '?')}, {land.get('state', '?')}"
+                f"Location: {land.get('village', '?')}, {land.get('district', '?')}"
             )
 
-    # --- Latest soil report ---
     reports = get_soil_reports(email=email, limit=1) if email else get_soil_reports(user_id=user_id, limit=1)
     if reports:
         r = reports[0]
-        ph    = r.get('ph', 0)
-        n_val = r.get('nitrogen_kg_ha', 0)
-        p_val = r.get('phosphorus_kg_ha', 0)
-        k_val = r.get('potassium_kg_ha', 0)
-        om    = r.get('organic_matter_pct', 0)
-        mc    = r.get('moisture_pct', 0)
-        ec    = r.get('ec_ds_m', 0)
-        rec   = r.get('recommendation', '')
-        lines.append("\n🧪 LATEST SOIL REPORT (Lab Test):")
+        lines.append("\n🧪 LATEST SOIL REPORT:")
         lines.append(
-            f"  pH={ph} | N={n_val} kg/ha | P={p_val} kg/ha | K={k_val} kg/ha | "
-            f"Organic Matter={om}% | Moisture={mc}% | EC={ec} dS/m"
+            f"  pH={r.get('ph', '?')} | N={r.get('nitrogen_kg_ha', '?')} | "
+            f"Moisture={r.get('moisture_pct', '?')}%"
         )
-        if rec:
-            # Include a short snippet of the previous recommendation as context
-            lines.append(f"  Previous recommendation: {rec[:200]}")
 
-        # Derive quick soil-health flags for the AI
-        flags = []
-        if ph < 5.5:
-            flags.append("soil is acidic — may need lime")
-        elif ph > 8.0:
-            flags.append("soil is alkaline — may need gypsum or sulphur")
-        if n_val < 150:
-            flags.append("nitrogen is low — consider urea/DAP top-dressing")
-        if p_val < 10:
-            flags.append("phosphorus is low — consider SSP/DAP")
-        if k_val < 100:
-            flags.append("potassium is low — consider MOP/SOP")
-        if om < 0.5:
-            flags.append("organic matter very low — apply FYM/compost")
-        if flags:
-            lines.append("  ⚠️ Soil health alerts: " + "; ".join(flags))
+    return "\n".join(lines)
 
-    # --- Latest real-time sensor data (IoT) ---
-    sensors = get_latest_sensor_data(email=email, user_id=user_id, limit=1) if email or user_id else []
-    if sensors:
-        s = sensors[0]
-        sensor_time = s.get('created_at', 'Unknown')
-        lines.append("\n📡 LATEST REAL-TIME SENSOR DATA (IoT):")
-        lines.append(
-            f"  Soil Moisture: {s.get('moisture', '?')}% | "
-            f"pH: {s.get('ph', '?')} | "
-            f"Temperature: {s.get('temperature', '?')}°C | "
-            f"EC: {s.get('ec', '?')} | "
-            f"N: {s.get('nitrogen', '?')} | "
-            f"P: {s.get('phosphorus', '?')} | "
-            f"K: {s.get('potassium', '?')}"
-        )
-        lines.append(f"  Recorded: {sensor_time}")
-        
-        # Real-time alerts
-        sensor_flags = []
-        moisture = s.get('moisture', 0)
-        sensor_ph = s.get('ph', 0)
-        
-        if moisture < 20:
-            sensor_flags.append("⚠️ Soil moisture critically low — irrigate immediately")
-        elif moisture > 70:
-            sensor_flags.append("⚠️ Soil moisture too high — risk of waterlogging")
-        
-        if sensor_ph and (sensor_ph < 5.5 or sensor_ph > 8.5):
-            sensor_flags.append(f"⚠️ Soil pH {sensor_ph} is off-balance")
-        
-        if sensor_flags:
-            lines.append("  " + " | ".join(sensor_flags))
 
-    return "\n".join(lines) if lines else ""
+def _estimate_crop_stage(crop: str, soil_history: list) -> str:
+    """
+    Estimate crop growth stage based on time since planting
+    Inferred from soil report dates (farmer typically does soil test at key stages)
+    """
+    if not soil_history:
+        return "Unknown stage"
+    
+    days_since_report = soil_history[0].get('days_ago', 999)
+    crop_lower = crop.lower() if crop else ""
+    
+    # Rough stage estimation (varies by crop)
+    if days_since_report < 30:
+        return "Early growth (0-30d)"
+    elif days_since_report < 60:
+        return "Mid-season (30-60d)"
+    elif days_since_report < 120:
+        return "Flowering/Development (60-120d)"
+    else:
+        return "Late season (>120d)"
+
+
+def _calculate_days_ago_from_dict(obj: dict) -> int:
+    """Helper to get days_ago from dict"""
+    return obj.get('days_ago', 0) if isinstance(obj.get('days_ago'), int) else 0
+
+
+
 
 
 def generate_pest_advisory(pest: str, crop: str, location: str) -> str:
@@ -232,37 +339,39 @@ def chat(user_id: int, message: str) -> tuple:
     }
     lang_name = lang_map.get(language, "English")
     
-    system_prompt = f"""You are KisanMitra AI 🌾.
-Expert AI farming assistant for Indian farmers.
+    system_prompt = f"""You are KisanMitra AI 🌾 - An expert agronomist advisor.
 
-🔴 **CRITICAL INSTRUCTION: You MUST respond ONLY in {lang_name}. Do NOT mix languages.**
+🔴 **LANGUAGE RULE (CRITICAL)**: You MUST respond ONLY in {lang_name}. NEVER mix languages. Every single word must be in {lang_name}.
 
-Follow these strict reasoning steps to generate your response:
-1. Check the farmer's registered land and crop details.
-2. Check any other pest queries submitted by the farmer.
-3. Check the chat history for past fertilizers used and analyze soil reports.
-4. Calculate and recommend the EXACT amount of fertilizer to be sprayed based on records.
-
-Format rules:
-- Keep it MINIMAL and direct to the point. NO lengthy paragraphs or fluff.
-- Use short bullet points.
-- Include emojis (🌾🚜🧪🐛💧) to make reading interesting.
-- Reply ONLY in {lang_name} - every single word must be in this language.
-- Never translate or use other languages.
-
-Farmer's Data Context:
+FARMER'S COMPLETE SITUATION:
 {crops_info}
 {farmer_context}
-Live weather for {location}:
-{weather['summary']}"""
 
+WEATHER (for {location}):
+{weather['summary']}
+
+YOUR REASONING PROCESS (follow STRICTLY):
+1. ✅ Analyze farmer's soil status - Check trends (improving/declining)
+2. ✅ Analyze sensor readings - Check patterns and alerts
+3. ✅ Check community pest risk - Warn if outbreak nearby
+4. ✅ Recall fertilizer history - What has farmer used before?
+5. ✅ Generate SPECIFIC advice - Not generic, tailored to THIS farmer's situation
+
+RESPONSE FORMAT (strict):
+- Keep MINIMAL - 3-4 sentences max
+- Use emojis: 🌾🚜🧪💧🐛⚠️
+- If action needed: EXACT dosage + timing + method
+- Only list schemes/subsidies if explicitly asked
+- If weather risk: warn about timing
+- Reply ONLY in {lang_name}"""
+    
     messages = [{"role": "system", "content": system_prompt}] + get_history(user_id) + [{"role": "user", "content": message}]
 
     try:
         res = _get_groq().chat.completions.create(
             model=GROQ_CHAT_MODEL,
             messages=messages,
-            max_tokens=500,
+            max_tokens=1000,  # Increased from 500 to prevent truncation
             temperature=0.7
         )
         reply = res.choices[0].message.content.strip()
