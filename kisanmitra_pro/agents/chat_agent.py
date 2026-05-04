@@ -278,7 +278,54 @@ def _calculate_days_ago_from_dict(obj: dict) -> int:
 
 
 
-def generate_pest_advisory(pest: str, crop: str, location: str) -> str:
+def _enforce_language_purity(response: str, language: str) -> str:
+    """
+    PHASE 4 - Post-processing language enforcement
+    
+    If AI mixed languages, try to extract target language portion
+    Returns either cleaned response or original if no mix detected
+    """
+    if language == "en":
+        # English - should be mostly ASCII
+        non_ascii = sum(1 for c in response if ord(c) > 127)
+        if non_ascii > len(response) * 0.05:  # >5% non-ASCII detected
+            # Extract only ASCII portions
+            cleaned = ''.join(c for c in response if ord(c) < 128 or c in '.,!?:;"\' ')
+            if len(cleaned) > 20:  # Only use if we have enough content
+                return cleaned
+    
+    elif language == "hi":
+        # Hindi - should be mostly Devanagari + ASCII punctuation
+        devanagari_count = sum(1 for c in response if '\u0900' <= c <= '\u097F')
+        total_chars = len(response)
+        if total_chars > 20 and devanagari_count < total_chars * 0.5:  # <50% Devanagari
+            # Likely mixed - filter to keep Devanagari + spaces + punctuation
+            cleaned = ''.join(c for c in response if '\u0900' <= c <= '\u097F' or c in ' .,!?:;()\'"')
+            if len(cleaned) > 20:
+                return cleaned
+    
+    elif language == "mr":
+        # Marathi - should be mostly Devanagari + English punctuation/numbers
+        devanagari_count = sum(1 for c in response if '\u0900' <= c <= '\u097F')
+        if len(response) > 20 and devanagari_count < len(response) * 0.6:  # <60% Devanagari
+            # Extract Devanagari + numbers + punctuation
+            cleaned = ''.join(c for c in response if '\u0900' <= c <= '\u097F' or c in ' 0123456789.,!?:;-()"\'/% ')
+            if len(cleaned) > 20:
+                return cleaned
+    
+    return response
+
+
+def _add_idempotency_hash(response: str) -> str:
+    """
+    PHASE 4 - Generate hash for idempotency check
+    Helps prevent double responses by tracking sent messages
+    """
+    import hashlib
+    return hashlib.md5(response[:100].encode()).hexdigest()[:8]
+
+
+
     """
     Generate a short, actionable broadcast message for a pest outbreak.
     """
@@ -375,6 +422,10 @@ RESPONSE FORMAT (strict):
             temperature=0.7
         )
         reply = res.choices[0].message.content.strip()
+        
+        # PHASE 4: Enforce language purity
+        reply = _enforce_language_purity(reply, language)
+        
         return reply, intent, language
     except Exception as e:
         print(f"Chat agent error: {e}")

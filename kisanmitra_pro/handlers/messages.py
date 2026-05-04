@@ -2,7 +2,7 @@ import asyncio
 import requests
 from telegram import Update
 from telegram.ext import ContextTypes
-from agents.chat_agent import chat, generate_pest_advisory
+from agents.chat_agent import chat, generate_pest_advisory, _add_idempotency_hash
 from agents.vision_agent import analyze_crop_photo
 from agents.voice_agent import transcribe_voice
 from services.mandi import get_mandi_prices
@@ -61,6 +61,14 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = update.message.text
     upsert_farmer(user.id, user.first_name or "", user.username or "")
 
+    # PHASE 4: Idempotency check - prevent duplicate processing
+    message_hash = hash(message)
+    last_hash = context.user_data.get('last_message_hash')
+    if last_hash == message_hash and context.user_data.get('last_response_sent'):
+        # Same message just sent, skip
+        return
+    context.user_data['last_message_hash'] = message_hash
+
     # PHASE 3: Add typing indicator to prevent timeouts
     await context.bot.send_chat_action(update.effective_chat.id, "typing")
     msg_lower = message.lower()
@@ -89,6 +97,9 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await asyncio.sleep(0.5)
         except Exception as e:
             print(f"Error sending message chunk {i+1}: {e}")
+    
+    # PHASE 4: Mark response as sent (idempotency)
+    context.user_data['last_response_sent'] = True
 
 
 
