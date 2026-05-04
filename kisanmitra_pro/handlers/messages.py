@@ -19,11 +19,49 @@ SCHEME_KEYWORDS = ["yojana", "scheme", "pm-kisan", "bima", "subsidy",
                    "sarkar", "government", "apply", "registration"]
 
 
+def split_long_response(text: str, max_length: int = 4000) -> list:
+    """
+    PHASE 3 - Split long responses into multiple messages
+    
+    Telegram has 4096 char limit. If response too long, split intelligently:
+    - Split at sentence boundaries (. ! ?)
+    - Keep emojis with their sentences
+    - Ensure each chunk is meaningful
+    
+    Returns: List of message chunks
+    """
+    if len(text) <= max_length:
+        return [text]
+    
+    chunks = []
+    current_chunk = ""
+    
+    # Split by sentences
+    sentences = text.replace('।', '.').split('. ')
+    
+    for sentence in sentences:
+        test_chunk = current_chunk + sentence + '. '
+        
+        if len(test_chunk) > max_length:
+            if current_chunk:
+                chunks.append(current_chunk.strip())
+            current_chunk = sentence + '. '
+        else:
+            current_chunk = test_chunk
+    
+    if current_chunk:
+        chunks.append(current_chunk.strip())
+    
+    return chunks if chunks else [text]
+
+
+
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     message = update.message.text
     upsert_farmer(user.id, user.first_name or "", user.username or "")
 
+    # PHASE 3: Add typing indicator to prevent timeouts
     await context.bot.send_chat_action(update.effective_chat.id, "typing")
     msg_lower = message.lower()
 
@@ -40,7 +78,18 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply, intent, language = chat(user.id, message)
         log_query(user.id, "text", message, reply, intent, language)
 
-    await update.message.reply_text(reply)
+    # PHASE 3: Split long responses to prevent truncation
+    chunks = split_long_response(reply)
+    
+    for i, chunk in enumerate(chunks):
+        try:
+            await update.message.reply_text(chunk)
+            # Add small delay between chunks if multiple
+            if i < len(chunks) - 1:
+                await asyncio.sleep(0.5)
+        except Exception as e:
+            print(f"Error sending message chunk {i+1}: {e}")
+
 
 
 async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
