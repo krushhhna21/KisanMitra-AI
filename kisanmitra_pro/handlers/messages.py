@@ -1,5 +1,6 @@
 import asyncio
 import requests
+import hashlib
 from telegram import Update
 from telegram.ext import ContextTypes
 from agents.chat_agent import chat, generate_pest_advisory, _add_idempotency_hash
@@ -62,44 +63,62 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     upsert_farmer(user.id, user.first_name or "", user.username or "")
 
     # PHASE 4: Idempotency check - prevent duplicate processing
-    message_hash = hash(message)
+    # Use MD5 hash (deterministic across sessions) instead of hash() which changes per session
+    message_hash = hashlib.md5(message.encode()).hexdigest()
     last_hash = context.user_data.get('last_message_hash')
+    
     if last_hash == message_hash and context.user_data.get('last_response_sent'):
-        # Same message just sent, skip
+        # Same message just sent, skip to prevent duplicates
         return
+    
     context.user_data['last_message_hash'] = message_hash
+    context.user_data['last_response_sent'] = False
 
     # PHASE 3: Add typing indicator to prevent timeouts
     await context.bot.send_chat_action(update.effective_chat.id, "typing")
     msg_lower = message.lower()
 
-    if any(k in msg_lower for k in MANDI_KEYWORDS):
-        await update.message.reply_text("💰 Mandi bhav check kar raha hoon... ⏳")
-        reply = get_mandi_prices(message)
-        log_query(user.id, "mandi", message, reply, "mandi")
+    try:
+        if any(k in msg_lower for k in MANDI_KEYWORDS):
+            await update.message.reply_text("💰 Mandi bhav check kar raha hoon... ⏳")
+            reply = get_mandi_prices(message)
+            log_query(user.id, "mandi", message, reply, "mandi")
 
-    elif any(k in msg_lower for k in SCHEME_KEYWORDS):
-        reply = find_schemes(message)
-        log_query(user.id, "text", message, reply, "scheme")
+        elif any(k in msg_lower for k in SCHEME_KEYWORDS):
+            reply = find_schemes(message)
+            log_query(user.id, "text", message, reply, "scheme")
 
-    else:
-        reply, intent, language = chat(user.id, message)
-        log_query(user.id, "text", message, reply, intent, language)
+        else:
+            # Wrap chat() in error handling with timeout fallback
+            try:
+                reply, intent, language = chat(user.id, message)
+                log_query(user.id, "text", message, reply, intent, language)
+            except Exception as e:
+                print(f"[ERROR] Chat agent failed: {e}")
+                reply = "🙏 Maafi kijiye, thodi dikkat hai. Baad mein phir se try karein. (Sorry, having a technical issue. Please try again in a moment.)"
+                log_query(user.id, "text", message, reply, "error", "hi")
 
-    # PHASE 3: Split long responses to prevent truncation
-    chunks = split_long_response(reply)
-    
-    for i, chunk in enumerate(chunks):
+        # PHASE 3: Split long responses to prevent truncation
+        chunks = split_long_response(reply)
+        
+        for i, chunk in enumerate(chunks):
+            try:
+                await update.message.reply_text(chunk)
+                # Add small delay between chunks if multiple
+                if i < len(chunks) - 1:
+                    await asyncio.sleep(0.5)
+            except Exception as e:
+                print(f"[ERROR] Sending message chunk {i+1}: {e}")
+        
+        # PHASE 4: Mark response as sent (idempotency)
+        context.user_data['last_response_sent'] = True
+        
+    except Exception as e:
+        print(f"[ERROR] handle_text() failed: {e}")
         try:
-            await update.message.reply_text(chunk)
-            # Add small delay between chunks if multiple
-            if i < len(chunks) - 1:
-                await asyncio.sleep(0.5)
-        except Exception as e:
-            print(f"Error sending message chunk {i+1}: {e}")
-    
-    # PHASE 4: Mark response as sent (idempotency)
-    context.user_data['last_response_sent'] = True
+            await update.message.reply_text("❌ Kuch gadbad ho gayi. Bhaiya se pooch lijiye. (Something went wrong. Please contact support.)")
+        except:
+            pass
 
 
 
