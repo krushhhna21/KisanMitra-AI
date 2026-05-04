@@ -85,7 +85,9 @@ def detect_language(message: str) -> str:
                         "nahi", "haan", "aapka", "khareed", "bechu", "khad", "sinchai", "paani",
                         "keeda", "rog", "dalna", "lagna", "saral", "samajh", "btao", "batao", "bolo",
                         "suno", "dekho", "karna", "chahta", "chahti", "chahte", "lagta", "hona", "hai",
-                        "ho", "tha", "the", "thi", "rahe", "raha", "rahi"]
+                        "ho", "tha", "the", "thi", "rahe", "raha", "rahi", "jameen", "jankari", "mil",
+                        "sakti", "sakta", "samaj", "pata", "padta", "bataiye", "bata", "kaun", "kaunsa",
+                        "milega", "aayega", "jayega", "milsakte", "kar sakte", "kar sakta"]
     hinglish_count = sum(1 for word in hinglish_keywords if word in msg)
     
     if hinglish_count >= 2:  # At least 2 Hinglish keywords
