@@ -429,7 +429,7 @@ Verify: Check app state = "Running"
 
 ### Manual Restart
 
-If WebJob is stuck:
+**Soft Restart** (for quick code reload):
 ```powershell
 az webapp webjob continuous stop \
   --name kisanmitra-ai-pro \
@@ -443,6 +443,21 @@ az webapp webjob continuous start \
   --webjob-name kisanmitra-bot \
   --resource-group KisanMitraRG
 ```
+
+**HARD Restart** (if bot still uses old code after soft restart):
+⚠️ Use this if language detection, context, or any Phase changes aren't working
+```powershell
+az webapp stop \
+  --name kisanmitra-ai-pro \
+  --resource-group KisanMitraRG
+
+Start-Sleep -Seconds 5
+
+az webapp start \
+  --name kisanmitra-ai-pro \
+  --resource-group KisanMitraRG
+```
+This stops the entire App Service, forcing WebJob to reload all Python code from scratch.
 
 ---
 
@@ -531,6 +546,25 @@ az webapp webjob continuous start \
 intelligence = get_farmer_intelligence(user_id, email)
 print(f"[DEBUG] Intelligence: {intelligence}")
 ```
+
+---
+
+### Issue #7: Hinglish Not Detected After Soft Restart ✅ FIXED (2c486a3 + Hard Restart)
+**Problem**: User sent Hinglish "kya mujhe urea ka istimaal karna chahiye" → Bot detected English → Responded in English saying "I can only respond in English"
+
+**Root Cause**: Soft restart (WebJob stop/start) didn't force Python code reload; process cached old code
+
+**Fix Applied**:
+- Hard restart entire App Service (not just WebJob): `az webapp stop` → `az webapp start`
+- This forces WebJob to reload all Python modules fresh
+- `detect_language()` now correctly identifies Hinglish keywords
+- System prompt enforces response in detected language
+
+**Prevention**: 
+- After code changes to detection logic, use HARD restart (not soft)
+- Soft restart works for most changes, but language/context changes need full reload
+
+**Test**: Send "kya mujhe urea ka istimaal karna chahiye" → Should get Hindi response ✅
 
 ---
 
