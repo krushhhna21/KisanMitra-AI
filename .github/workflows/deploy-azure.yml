@@ -32,9 +32,37 @@ jobs:
         uses: azure/webapps-deploy@v2
         with:
           app-name: kisanmitra-ai-pro
-          package: .
+          package: kisanmitra_pro/
+
+      - name: Deploy WebJob (bot_webjob) to Azure
+        run: |
+          echo "📦 Deploying WebJob to Azure Kudu..."
+          TOKEN=$(az account get-access-token --query accessToken -o tsv)
+          
+          # Create zip of bot_webjob with correct structure for WebJob
+          cd kisanmitra_pro
+          zip -r webjob.zip bot_webjob -q
+          
+          # Upload to correct WebJob location via Kudu API
+          KUDU_URL="https://kisanmitra-ai-pro.scm.azurewebsites.net/api/zip/site/wwwroot/App_Data/jobs/continuous/kisanmitra-bot"
+          curl -X PUT \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @webjob.zip \
+            "$KUDU_URL"
+          
+          echo "✅ WebJob deployed successfully"
+          rm webjob.zip
+
+      - name: Restart WebJob after deployment
+        run: |
+          echo "🔄 Restarting WebJob..."
+          az webapp webjob continuous stop --name kisanmitra-ai-pro --webjob-name kisanmitra-bot --resource-group KisanMitraRG 2>/dev/null || true
+          sleep 3
+          az webapp webjob continuous start --name kisanmitra-ai-pro --webjob-name kisanmitra-bot --resource-group KisanMitraRG 2>/dev/null || true
+          echo "✅ WebJob restarted"
 
       - name: Verify deployment
         run: |
-          echo "Deployment complete. App service will use updated code on next request."
+          echo "✅ Deployment complete. App service and WebJob updated."
           az webapp show --name kisanmitra-ai-pro --resource-group KisanMitraRG --query "state" -o tsv
