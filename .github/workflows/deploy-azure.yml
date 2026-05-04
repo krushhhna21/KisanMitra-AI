@@ -34,16 +34,7 @@ jobs:
           app-name: kisanmitra-ai-pro
           package: .
 
-      - name: Restart WebJob (kisanmitra-bot)
-        run: |
-          echo "Stopping WebJob..."
-          az webapp webjob continuous stop --name kisanmitra-ai-pro --webjob-name kisanmitra-bot --resource-group KisanMitraRG
-          sleep 5
-          echo "Starting WebJob with updated code..."
-          az webapp webjob continuous start --name kisanmitra-ai-pro --webjob-name kisanmitra-bot --resource-group KisanMitraRG
-          sleep 5
-          echo "WebJob restart complete"
-
       - name: Verify deployment
         run: |
+          echo "Deployment complete. App service will use updated code on next request."
           az webapp show --name kisanmitra-ai-pro --resource-group KisanMitraRG --query "state" -o tsv
