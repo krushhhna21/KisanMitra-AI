@@ -53,35 +53,55 @@ def detect_intent(message: str) -> str:
     return "other"
 
 def detect_language(message: str) -> str:
-    """Detect Hindi vs Marathi vs English with better accuracy"""
+    """Detect Hindi vs Marathi vs English with Hinglish/Manglish support"""
+    msg = message.lower()
+    
     # Count script characters
-    marathi_chars = sum(1 for c in message if '\u0900' <= c <= '\u097F')  # Devanagari
+    devanagari_chars = sum(1 for c in message if '\u0900' <= c <= '\u097F')  # Devanagari (Hindi/Marathi script)
     english_chars = sum(1 for c in message if c.isalpha() and ord(c) < 128)  # ASCII letters
     
-    # Specific Marathi indicators
-    marathi_words = ["माझ्या", "करा", "आहे", "काय", "कसे", "टाकावे", "आली", "झाली", "नाही", "एकर", "गव्ह"]
-    if any(w in message for w in marathi_words):
+    # === MARATHI DETECTION ===
+    # Specific Marathi indicators (Devanagari)
+    marathi_devanagari = ["माझ्या", "करा", "आहे", "काय", "कसे", "टाकावे", "आली", "झाली", "नाही", "एकर", "गव्ह"]
+    if any(w in message for w in marathi_devanagari):
         return "mr"
     
-    # If Marathi script detected and is significant
-    if marathi_chars > len(message) * 0.3:  # >30% Marathi characters
-        return "mr"
+    # Marathi in Roman script (Manglish)
+    marathi_roman = ["maza", "kar", "aahe", "kay", "kase", "takave", "ali", "jhali", "nahi", "eker", "gaw",
+                     "vyaj", "lahn", "ani", "hoil", "ch", "navha"]
+    if any(w in msg for w in marathi_roman):
+        # Check if not pure English
+        if english_chars < len(message):
+            return "mr"
     
-    # If Hindi script detected and is significant
-    if marathi_chars > 3 and marathi_chars <= len(message) * 0.3:  # Devanagari but not majority Marathi
+    # === HINDI DETECTION ===
+    # Hindi in Devanagari script (pure Hindi words)
+    hindi_devanagari = ["मुझे", "मेरा", "क्या", "कैसे", "नहीं", "हाँ", "करना", "चाहिए", "फसल", "खेत", "मिट्टी"]
+    if any(w in message for w in hindi_devanagari):
         return "hi"
     
-    # If mostly English/ASCII
-    if english_chars > len(message) * 0.6:  # >60% English letters
+    # Hinglish detection - common Hindi words in Roman script
+    hinglish_keywords = ["mujhe", "mere", "khet", "mitti", "fasal", "kar", "chahiye", "kya", "kaise", 
+                        "nahi", "haan", "aapka", "khareed", "bechu", "khad", "sinchai", "paani",
+                        "keeda", "rog", "dalna", "lagna", "saral", "samajh", "btao", "batao", "bolo",
+                        "suno", "dekho", "karna", "chahta", "chahti", "chahte", "lagta", "hona", "hai",
+                        "ho", "tha", "the", "thi", "rahe", "raha", "rahi"]
+    hinglish_count = sum(1 for word in hinglish_keywords if word in msg)
+    
+    if hinglish_count >= 2:  # At least 2 Hinglish keywords
+        return "hi"
+    
+    # === SCRIPT-BASED FALLBACK ===
+    # If Devanagari detected and is significant (>30%)
+    if devanagari_chars > len(message) * 0.3:
+        return "hi"  # Default to Hindi for Devanagari
+    
+    # If mostly English/ASCII but with some content
+    if english_chars > len(message) * 0.6:
         return "en"
     
-    # Default based on content
-    if marathi_chars > english_chars:
-        return "mr"
-    elif english_chars > 0:
-        return "en"
-    else:
-        return "hi"
+    # Default to Hindi if uncertain (common for farmer messages)
+    return "hi"
 
 
 def _build_farmer_context(user_id: int, email: str = "") -> str:
